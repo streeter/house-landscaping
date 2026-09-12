@@ -336,6 +336,32 @@ button:disabled {
 .plant-details {
   padding-top: 18px;
 }
+.plant-details label {
+  display: grid;
+  gap: 5px;
+  font-size: 0.8rem;
+  font-weight: 650;
+  margin-bottom: 12px;
+}
+.plant-details input,
+.plant-details select,
+.plant-details textarea {
+  width: 100%;
+  border: 1px solid #cad7c7;
+  border-radius: 7px;
+  background: white;
+  color: #283c30;
+  padding: 9px;
+  font-weight: 400;
+}
+.plant-field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.plant-field-grid .full-width {
+  grid-column: 1 / -1;
+}
 .record-id,
 .coordinates {
   font-size: 0.72rem;

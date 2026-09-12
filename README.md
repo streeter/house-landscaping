@@ -4,7 +4,7 @@ A local, file-based yard map and care planner. The implementation follows [the p
 
 The app autosaves its working copy in the current browser. On a later visit, choose **Resume browser draft** to continue. **Open file** validates and replaces the working copy; **Save / Download** and **Save As** create a portable `yard.json`. The status line distinguishes browser storage from a file export and identifies edits since the last download. Move the downloaded file to another browser or device and open it there; no account or automatic synchronization is involved.
 
-Use **Place plant** and tap or click the yard map to add a marker. Select an inventory entry to locate it, drag a marker to move it, or duplicate it. The map has zoom, pan, layer switches, and undo/redo. Retiring a plant keeps its record for history; planned plants appear separately from existing ones.
+Use **Place plant** and tap or click the yard map to add a marker. Select an inventory entry to locate it, drag a marker to move it, and edit its plant, growing-setting, and surface details in the panel. The map has zoom, pan, layer switches, and undo/redo. Retiring a plant keeps its record for history; planned plants appear separately from existing ones.
 
 The map uses feet in a `0 0 40 120` coordinate system. [The structural geometry](data/property-base.json) is its source of truth, with named surfaces and explicit approximate edges. `npm run map:generate` regenerates the committed SVG; the unit test checks the asset against an in-memory render. The source image is only a tracing reference, and its illustrated plants are absent from the map.
 

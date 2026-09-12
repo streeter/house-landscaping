@@ -210,6 +210,26 @@ export function YardWorkspace({ document, onChange }: Props) {
     setSelectedId(clone.id);
   };
 
+  const setField = (
+    field:
+      | "label"
+      | "species"
+      | "notes"
+      | "sun"
+      | "soil"
+      | "sizeNotes"
+      | "establishmentDate",
+    value: string,
+  ) => {
+    if (!selected) return;
+    updatePlant(selected.id, (plant) => ({
+      ...plant,
+      [field]: ["species", "sun", "soil", "establishmentDate"].includes(field)
+        ? value || null
+        : value,
+    }));
+  };
+
   return (
     <section
       className="yard-workspace"
@@ -473,11 +493,180 @@ export function YardWorkspace({ document, onChange }: Props) {
           ))}
           {selected && (
             <div className="plant-details">
-              <h2>Selected plant</h2>
+              <h2>Plant details</h2>
               <p className="record-id">ID: {selected.id}</p>
-              <p>
-                {selected.label} · {selected.growingSetting.surfaceId}
-              </p>
+              <label>
+                Label
+                <input
+                  value={selected.label}
+                  onChange={(event) => setField("label", event.target.value)}
+                />
+              </label>
+              <label>
+                Species
+                <input
+                  value={selected.species ?? ""}
+                  onChange={(event) => setField("species", event.target.value)}
+                  placeholder="Unknown"
+                />
+              </label>
+              <label>
+                Status
+                <select
+                  value={selected.status}
+                  onChange={(event) =>
+                    updatePlant(selected.id, (plant) => ({
+                      ...plant,
+                      status: event.target.value as Plant["status"],
+                    }))
+                  }
+                >
+                  <option value="existing">Existing</option>
+                  <option value="planned">Planned</option>
+                  <option value="retired">Retired</option>
+                </select>
+              </label>
+              <label>
+                Growing setting
+                <select
+                  value={selected.growingSetting.kind}
+                  onChange={(event) =>
+                    updatePlant(selected.id, (plant) => ({
+                      ...plant,
+                      growingSetting: {
+                        ...plant.growingSetting,
+                        kind: event.target
+                          .value as Plant["growingSetting"]["kind"],
+                      },
+                    }))
+                  }
+                >
+                  <option value="ground">Ground</option>
+                  <option value="container">Container</option>
+                  <option value="planting-pocket">Planting pocket</option>
+                </select>
+              </label>
+              <label>
+                Supporting surface
+                <select
+                  value={selected.growingSetting.surfaceId}
+                  onChange={(event) =>
+                    updatePlant(selected.id, (plant) => ({
+                      ...plant,
+                      growingSetting: {
+                        ...plant.growingSetting,
+                        surfaceId: event.target.value,
+                      },
+                    }))
+                  }
+                >
+                  {document.property.surfaces.map((surface) => (
+                    <option key={surface.id} value={surface.id}>
+                      {surface.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {selected.growingSetting.kind === "container" && (
+                <div className="plant-field-grid">
+                  <label>
+                    Width (ft)
+                    <input
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      value={selected.growingSetting.containerWidthFeet ?? ""}
+                      onChange={(event) =>
+                        updatePlant(selected.id, (plant) => ({
+                          ...plant,
+                          growingSetting: {
+                            ...plant.growingSetting,
+                            containerWidthFeet:
+                              Number(event.target.value) || null,
+                          },
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    Depth (ft)
+                    <input
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      value={selected.growingSetting.containerDepthFeet ?? ""}
+                      onChange={(event) =>
+                        updatePlant(selected.id, (plant) => ({
+                          ...plant,
+                          growingSetting: {
+                            ...plant.growingSetting,
+                            containerDepthFeet:
+                              Number(event.target.value) || null,
+                          },
+                        }))
+                      }
+                    />
+                  </label>
+                  <label className="full-width">
+                    Drainage notes
+                    <input
+                      value={selected.growingSetting.drainageNotes ?? ""}
+                      onChange={(event) =>
+                        updatePlant(selected.id, (plant) => ({
+                          ...plant,
+                          growingSetting: {
+                            ...plant.growingSetting,
+                            drainageNotes: event.target.value || null,
+                          },
+                        }))
+                      }
+                    />
+                  </label>
+                </div>
+              )}
+              <div className="plant-field-grid">
+                <label>
+                  Sun
+                  <input
+                    value={selected.sun ?? ""}
+                    onChange={(event) => setField("sun", event.target.value)}
+                  />
+                </label>
+                <label>
+                  Soil
+                  <input
+                    value={selected.soil ?? ""}
+                    onChange={(event) => setField("soil", event.target.value)}
+                  />
+                </label>
+              </div>
+              <label>
+                Established
+                <input
+                  type="date"
+                  value={selected.establishmentDate ?? ""}
+                  onChange={(event) =>
+                    setField("establishmentDate", event.target.value)
+                  }
+                />
+              </label>
+              <label>
+                Size
+                <input
+                  value={selected.sizeNotes}
+                  onChange={(event) =>
+                    setField("sizeNotes", event.target.value)
+                  }
+                />
+              </label>
+              <label>
+                Notes
+                <textarea
+                  rows={3}
+                  value={selected.notes}
+                  onChange={(event) => setField("notes", event.target.value)}
+                />
+              </label>
               <p className="coordinates">
                 Anchor: {selected.position[0]}, {selected.position[1]} ft
               </p>
