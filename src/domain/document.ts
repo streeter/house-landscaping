@@ -312,8 +312,13 @@ export function parseYardDocument(input: unknown): YardDocumentV1 {
   if (new Set(mappedStations).size !== mappedStations.length)
     throw new Error("Duplicate station mapping");
   validateSettings(document.controller.settings);
-  for (const record of document.scheduleRecords)
+  for (const record of document.scheduleRecords) {
     validateSettings(record.settings);
+    if (record.state === "programmed" && record.verifiedAt === null)
+      throw new Error(
+        `Programmed schedule ${record.id} requires verification time`,
+      );
+  }
   for (const item of document.plants) {
     if (!insideLot(item.position))
       throw new Error(`Plant ${item.id} is outside the property`);

@@ -3,6 +3,7 @@ import { propertyBase } from "./property-base";
 import { YardWorkspace } from "./components/YardWorkspace";
 import { ZoneWorkspace } from "./components/ZoneWorkspace";
 import { ControllerWorkspace } from "./components/ControllerWorkspace";
+import { CareWorkspace } from "./components/CareWorkspace";
 import {
   needsChecking,
   renderAdvicePrompt,
@@ -336,6 +337,13 @@ export function App() {
               <p>No outstanding checks identified.</p>
             )}
           </section>
+          <CareWorkspace
+            key={`${copy.document.id}-care`}
+            document={copy.document}
+            onChange={(next) =>
+              setCopy((previous) => editWorkingCopy(previous, () => next))
+            }
+          />
           <div className="property-section">
             <aside className="map-notes" aria-label="Property details">
               <h2>Property details</h2>
