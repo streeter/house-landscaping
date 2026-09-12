@@ -20,6 +20,45 @@ export interface SharedYard {
   upgrade: MapUpgradePreview | null;
 }
 
+const historyMarker = z.object({
+  yardPlanner: z.object({ parameter: z.string(), configurationId: z.string() }),
+});
+
+// Reloading an address generated in this tab should resume the browser draft,
+// while a copied link (or one with a changed parameter) still needs importing.
+export function incomingYardParameter(
+  url: string,
+  state: unknown,
+  configurationId: string,
+): string | null {
+  const parameter = new URL(url).searchParams.get("yard");
+  const marker = historyMarker.safeParse(state);
+  if (
+    marker.success &&
+    marker.data.yardPlanner.parameter === parameter &&
+    marker.data.yardPlanner.configurationId === configurationId
+  )
+    return null;
+  return parameter;
+}
+
+export function replaceYardUrl(url: URL, configurationId?: string): void {
+  const previous: unknown = window.history.state;
+  const state: Record<string, unknown> =
+    previous !== null &&
+    typeof previous === "object" &&
+    !Array.isArray(previous)
+      ? { ...previous }
+      : {};
+  if (configurationId)
+    state.yardPlanner = {
+      parameter: url.searchParams.get("yard"),
+      configurationId,
+    };
+  else delete state.yardPlanner;
+  window.history.replaceState(state, "", url);
+}
+
 function checkSupport(): void {
   if (
     typeof CompressionStream === "undefined" ||
@@ -42,7 +81,7 @@ export async function createYardLink(
   );
   if (new TextEncoder().encode(text).byteLength > MAX_SHARED_BYTES)
     throw new Error(
-      "This yard is too large for a share link. Use Save / Download instead.",
+      "This yard is too big to include in the URL. You'll need to download it to share it.",
     );
   const compressed = await new Response(
     new Blob([text]).stream().pipeThrough(new CompressionStream("gzip")),
@@ -58,7 +97,7 @@ export async function createYardLink(
   url.searchParams.set("yard", `1.${encoded}`);
   if (url.href.length > MAX_SHARE_URL_LENGTH)
     throw new Error(
-      `This share URL would be ${url.href.length.toLocaleString("en-US")} characters (limit ${MAX_SHARE_URL_LENGTH.toLocaleString("en-US")}). Use Save / Download instead.`,
+      "This yard is too big to include in the URL. You'll need to download it to share it.",
     );
   return url.href;
 }

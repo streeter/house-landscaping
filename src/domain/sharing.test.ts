@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import { newWorkingCopy } from "./files";
 import {
   createYardLink,
+  incomingYardParameter,
   MAX_SHARED_BYTES,
   MAX_SHARE_URL_LENGTH,
   readYardLink,
@@ -83,13 +84,13 @@ describe("compressed yard links", () => {
         "Yard",
         `https://example.com/${"x".repeat(MAX_SHARE_URL_LENGTH)}`,
       ),
-    ).rejects.toThrow("Save / Download");
+    ).rejects.toThrow("download it to share it");
     copy.document.location.growingNotes = Array.from({ length: 500 }, () =>
       crypto.randomUUID(),
     ).join(" ");
     await expect(
       createYardLink(copy, "Large", "https://example.com/"),
-    ).rejects.toThrow("characters");
+    ).rejects.toThrow("download it to share it");
   });
 
   test("stops highly compressed oversized payloads before parsing", async () => {
@@ -100,6 +101,22 @@ describe("compressed yard links", () => {
     await expect(readYardLink(value)).rejects.toThrow("expanded yard");
     await expect(
       createYardLink(copy, "Oversized", "https://example.com/"),
-    ).rejects.toThrow("too large");
+    ).rejects.toThrow("too big");
   });
+});
+
+test("only a matching URL generated for the selected local configuration skips import", () => {
+  const url = "https://example.com/?yard=1.abc";
+  const marker = {
+    yardPlanner: { parameter: "1.abc", configurationId: "local" },
+  };
+  expect(incomingYardParameter(url, marker, "local")).toBeNull();
+  expect(incomingYardParameter(url, null, "local")).toBe("1.abc");
+  expect(incomingYardParameter(url, marker, "other")).toBe("1.abc");
+  expect(
+    incomingYardParameter(url.replace("abc", "xyz"), marker, "local"),
+  ).toBe("1.xyz");
+  expect(incomingYardParameter(url, { yardPlanner: null }, "local")).toBe(
+    "1.abc",
+  );
 });
