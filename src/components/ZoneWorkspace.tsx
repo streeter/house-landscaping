@@ -1,6 +1,6 @@
 import { useRef, useState, type PointerEvent } from "react";
 import { coveringZoneIds, revalidateOverlapNotes } from "../domain/geometry";
-import type { YardDocumentV1, Zone } from "../domain/document";
+import type { OverlapNote, YardDocumentV1, Zone } from "../domain/document";
 import type { Point } from "../property-base";
 import { ZoneLayers } from "./ZoneLayers";
 
@@ -34,6 +34,11 @@ export function ZoneWorkspace({ document, onChange }: Props) {
   const [drawing, setDrawing] = useState(false);
   const [draftPoints, setDraftPoints] = useState<Point[]>([]);
   const [inspectionPoint, setInspectionPoint] = useState<Point | null>(null);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const [draftRelationship, setDraftRelationship] = useState<
+    OverlapNote["relationship"] | ""
+  >("");
+  const [draftNoteText, setDraftNoteText] = useState("");
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState<Point>([0, 0]);
   const [previewPoint, setPreviewPoint] = useState<Point | null>(null);
@@ -191,6 +196,32 @@ export function ZoneWorkspace({ document, onChange }: Props) {
   const covering = inspectionPoint
     ? coveringZoneIds(inspectionPoint, document.zones)
     : [];
+  const selectedNote =
+    document.overlapNotes.find((note) => note.id === selectedNoteId) ?? null;
+
+  const addNote = () => {
+    if (!inspectionPoint || covering.length < 2 || !draftRelationship) return;
+    const note: OverlapNote = {
+      id: crypto.randomUUID(),
+      point: inspectionPoint,
+      zoneIds: covering,
+      relationship: draftRelationship,
+      notes: draftNoteText,
+      stale: false,
+    };
+    onChange({ ...document, overlapNotes: [...document.overlapNotes, note] });
+    setSelectedNoteId(note.id);
+    setDraftRelationship("");
+    setDraftNoteText("");
+  };
+
+  const updateNote = (id: string, update: (note: OverlapNote) => OverlapNote) =>
+    onChange({
+      ...document,
+      overlapNotes: document.overlapNotes.map((note) =>
+        note.id === id ? update(note) : note,
+      ),
+    });
 
   return (
     <section className="zone-workspace" aria-label="Irrigation zone editor">
@@ -374,6 +405,42 @@ export function ZoneWorkspace({ document, onChange }: Props) {
                 strokeWidth=".4"
               />
             )}
+            {document.overlapNotes.map((note) => (
+              <g
+                key={note.id}
+                onClick={(event) => {
+                  if (drawing) return;
+                  event.stopPropagation();
+                  setSelectedNoteId(note.id);
+                  setInspectionPoint(note.point);
+                }}
+              >
+                <circle
+                  cx={note.point[0]}
+                  cy={note.point[1]}
+                  r=".85"
+                  fill={note.stale ? "#b44c3d" : "#263f31"}
+                  stroke="white"
+                  strokeWidth=".2"
+                />
+                <text
+                  x={note.point[0]}
+                  y={note.point[1] + 0.35}
+                  textAnchor="middle"
+                  fontSize="1"
+                  fill="white"
+                  pointerEvents="none"
+                >
+                  i
+                </text>
+                <title>
+                  {note.relationship === "shared-hose"
+                    ? "Shared hose"
+                    : "Independent sources"}
+                  {note.stale ? " (needs checking)" : ""}
+                </title>
+              </g>
+            ))}
           </svg>
           <figcaption>
             Click to inspect coverage; drag a selected polygon’s vertices to
@@ -586,7 +653,152 @@ export function ZoneWorkspace({ document, onChange }: Props) {
             ) : (
               <p>Click the map to inspect all covering zones.</p>
             )}
+            {inspectionPoint && covering.length >= 2 && (
+              <div className="source-note-form">
+                <h4>Record sources in this overlap</h4>
+                <label>
+                  Relationship
+                  <select
+                    value={draftRelationship}
+                    onChange={(event) =>
+                      setDraftRelationship(
+                        event.target.value as OverlapNote["relationship"] | "",
+                      )
+                    }
+                  >
+                    <option value="">Choose what you observed</option>
+                    <option value="shared-hose">
+                      Zones activate the same hose
+                    </option>
+                    <option value="independent-sources">
+                      Independent watering sources
+                    </option>
+                  </select>
+                </label>
+                <label>
+                  Context
+                  <textarea
+                    rows={2}
+                    value={draftNoteText}
+                    onChange={(event) => setDraftNoteText(event.target.value)}
+                    placeholder="Optional location or hose detail"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={addNote}
+                  disabled={!draftRelationship}
+                >
+                  Add source note here
+                </button>
+              </div>
+            )}
           </div>
+          {document.overlapNotes.length > 0 && (
+            <div className="saved-source-notes">
+              <h3>Source notes</h3>
+              {document.overlapNotes.map((note) => (
+                <button
+                  type="button"
+                  key={note.id}
+                  className={
+                    selectedNoteId === note.id
+                      ? "selected-source-note"
+                      : "subtle-button"
+                  }
+                  onClick={() => {
+                    setSelectedNoteId(note.id);
+                    setInspectionPoint(note.point);
+                  }}
+                >
+                  {note.relationship === "shared-hose"
+                    ? "Shared hose"
+                    : "Independent sources"}{" "}
+                  · {note.point.join(", ")} ft
+                  {note.stale ? " · needs checking" : ""}
+                </button>
+              ))}
+              {selectedNote && (
+                <div className="source-note-details">
+                  {selectedNote.stale && (
+                    <p className="stale-note">
+                      Coverage changed here. Check this note before relying on
+                      it.
+                    </p>
+                  )}
+                  <p>Zones: {selectedNote.zoneIds.join(", ")}</p>
+                  <label>
+                    Relationship
+                    <select
+                      value={selectedNote.relationship}
+                      onChange={(event) =>
+                        updateNote(selectedNote.id, (note) => ({
+                          ...note,
+                          relationship: event.target
+                            .value as OverlapNote["relationship"],
+                        }))
+                      }
+                    >
+                      <option value="shared-hose">
+                        Zones activate the same hose
+                      </option>
+                      <option value="independent-sources">
+                        Independent watering sources
+                      </option>
+                    </select>
+                  </label>
+                  <label>
+                    Context
+                    <textarea
+                      rows={2}
+                      value={selectedNote.notes}
+                      onChange={(event) =>
+                        updateNote(selectedNote.id, (note) => ({
+                          ...note,
+                          notes: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <div className="zone-actions">
+                    <button
+                      type="button"
+                      className="subtle-button"
+                      disabled={!inspectionPoint || covering.length < 2}
+                      onClick={() => {
+                        if (!inspectionPoint || covering.length < 2) return;
+                        updateNote(selectedNote.id, (note) => ({
+                          ...note,
+                          point: inspectionPoint,
+                          zoneIds: covering,
+                          stale: false,
+                        }));
+                      }}
+                    >
+                      Re-anchor here
+                    </button>
+                    <button
+                      type="button"
+                      className="subtle-button"
+                      onClick={() => {
+                        if (window.confirm("Remove this source note?")) {
+                          onChange({
+                            ...document,
+                            overlapNotes: document.overlapNotes.filter(
+                              (note) => note.id !== selectedNote.id,
+                            ),
+                          });
+                          setSelectedNoteId(null);
+                        }
+                      }}
+                    >
+                      Remove note
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </aside>
       </div>
     </section>

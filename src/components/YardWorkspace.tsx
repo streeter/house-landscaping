@@ -54,6 +54,11 @@ export function YardWorkspace({ document, onChange }: Props) {
   const [showZones, setShowZones] = useState(true);
   const [showGrid, setShowGrid] = useState(false);
   const [previewPoint, setPreviewPoint] = useState<Point | null>(null);
+  const [coverageDraft, setCoverageDraft] = useState<{
+    plantId: string;
+    zoneIds: string[];
+    reason: string;
+  } | null>(null);
   const [past, setPast] = useState<YardDocumentV1[]>([]);
   const [future, setFuture] = useState<YardDocumentV1[]>([]);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -522,6 +527,112 @@ export function YardWorkspace({ document, onChange }: Props) {
                 {effectiveZoneIds(selected, document.zones).join(", ") ||
                   "none mapped"}
               </p>
+              {selected.manualCoverage && (
+                <p className="coverage-detail">
+                  Manual correction: {selected.manualCoverage.reason}
+                </p>
+              )}
+              {coverageDraft?.plantId === selected.id ? (
+                <div className="coverage-correction">
+                  <h3>Correct mapped coverage</h3>
+                  <p>
+                    Select every zone reaching this anchor. This changes
+                    membership only; it does not assert a shared hose.
+                  </p>
+                  {document.zones.map((zone) => (
+                    <label key={zone.id} className="coverage-zone-choice">
+                      <input
+                        type="checkbox"
+                        checked={coverageDraft.zoneIds.includes(zone.id)}
+                        onChange={(event) =>
+                          setCoverageDraft((draft) =>
+                            draft
+                              ? {
+                                  ...draft,
+                                  zoneIds: event.target.checked
+                                    ? [...draft.zoneIds, zone.id]
+                                    : draft.zoneIds.filter(
+                                        (id) => id !== zone.id,
+                                      ),
+                                }
+                              : null,
+                          )
+                        }
+                      />{" "}
+                      {zone.name}
+                    </label>
+                  ))}
+                  <label>
+                    Reason
+                    <input
+                      value={coverageDraft.reason}
+                      onChange={(event) =>
+                        setCoverageDraft((draft) =>
+                          draft
+                            ? { ...draft, reason: event.target.value }
+                            : null,
+                        )
+                      }
+                      placeholder="What did you observe?"
+                    />
+                  </label>
+                  <div className="plant-actions">
+                    <button
+                      type="button"
+                      disabled={!coverageDraft.reason.trim()}
+                      onClick={() => {
+                        updatePlant(selected.id, (plant) => ({
+                          ...plant,
+                          manualCoverage: {
+                            zoneIds: coverageDraft.zoneIds,
+                            reason: coverageDraft.reason.trim(),
+                          },
+                        }));
+                        setCoverageDraft(null);
+                      }}
+                    >
+                      Apply correction
+                    </button>
+                    <button
+                      type="button"
+                      className="subtle-button"
+                      onClick={() => setCoverageDraft(null)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="plant-actions coverage-actions">
+                  <button
+                    type="button"
+                    className="subtle-button"
+                    onClick={() =>
+                      setCoverageDraft({
+                        plantId: selected.id,
+                        zoneIds: effectiveZoneIds(selected, document.zones),
+                        reason: selected.manualCoverage?.reason ?? "",
+                      })
+                    }
+                  >
+                    Correct coverage
+                  </button>
+                  {selected.manualCoverage && (
+                    <button
+                      type="button"
+                      className="subtle-button"
+                      onClick={() =>
+                        updatePlant(selected.id, (plant) => ({
+                          ...plant,
+                          manualCoverage: null,
+                        }))
+                      }
+                    >
+                      Clear correction
+                    </button>
+                  )}
+                </div>
+              )}
               <label>
                 Label
                 <input
