@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useRef, useState, type PointerEvent } from "react";
 import {
   coveringZoneIds,
   effectiveZoneIds,
@@ -65,8 +65,6 @@ export function YardWorkspace({ document, onChange }: Props) {
     zoneIds: string[];
     reason: string;
   } | null>(null);
-  const [past, setPast] = useState<YardDocumentV1[]>([]);
-  const [future, setFuture] = useState<YardDocumentV1[]>([]);
   const svgRef = useRef<SVGSVGElement>(null);
   const dragRef = useRef<{ id: string; point: Point } | null>(null);
 
@@ -82,8 +80,6 @@ export function YardWorkspace({ document, onChange }: Props) {
   const retired = document.plants.filter((plant) => plant.status === "retired");
 
   const commit = (next: YardDocumentV1) => {
-    setPast((items) => [...items, document].slice(-50));
-    setFuture([]);
     onChange(next);
   };
 
@@ -95,39 +91,6 @@ export function YardWorkspace({ document, onChange }: Props) {
       ),
     });
   };
-
-  const undo = () => {
-    const previous = past.at(-1);
-    if (!previous) return;
-    setPast(past.slice(0, -1));
-    setFuture([document, ...future]);
-    onChange(previous);
-  };
-
-  const redo = () => {
-    const next = future[0];
-    if (!next) return;
-    setFuture(future.slice(1));
-    setPast([...past, document]);
-    onChange(next);
-  };
-
-  useEffect(() => {
-    const shortcut = (event: KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "z")
-        return;
-      if (
-        event.target instanceof HTMLElement &&
-        ["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName)
-      )
-        return;
-      event.preventDefault();
-      if (event.shiftKey) redo();
-      else undo();
-    };
-    window.addEventListener("keydown", shortcut);
-    return () => window.removeEventListener("keydown", shortcut);
-  });
 
   const svgPoint = (clientX: number, clientY: number): Point => {
     const matrix = svgRef.current?.getScreenCTM();
@@ -335,22 +298,6 @@ export function YardWorkspace({ document, onChange }: Props) {
               </button>
             </>
           ))}
-        <button
-          type="button"
-          className="subtle-button"
-          onClick={undo}
-          disabled={past.length === 0}
-        >
-          Undo
-        </button>
-        <button
-          type="button"
-          className="subtle-button"
-          onClick={redo}
-          disabled={future.length === 0}
-        >
-          Redo
-        </button>
         <span className="toolbar-spacer" />
         <button
           type="button"
