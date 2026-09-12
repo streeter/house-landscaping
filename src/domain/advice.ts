@@ -122,6 +122,26 @@ export function renderYardSummary(document: YardDocumentV1): string {
     );
   if (document.overlapNotes.length === 0)
     lines.push("No physical source relationships recorded.");
+  lines.push("", "## Care history and decisions", "");
+  for (const record of document.observations)
+    lines.push(
+      `- Observation ${record.at} for ${record.target.kind} ${record.target.id ?? "property"}: ${record.text}`,
+    );
+  for (const task of document.tasks)
+    lines.push(
+      `- Task due ${task.dueDate} for ${task.target.kind} ${task.target.id ?? "property"}: ${task.notes}; repeat ${task.repeatDays ? `every ${task.repeatDays} days` : "none"}; ${task.completedAt ? `completed ${task.completedAt}` : "open"}.`,
+    );
+  for (const record of document.scheduleRecords)
+    lines.push(
+      `- Schedule decision ${record.effectiveDate}: ${record.state}; verified ${record.verifiedAt ?? "not yet"}; source export ${record.sourceExportId ?? "none"}; ${display(record.notes)}.`,
+    );
+  if (
+    document.observations.length +
+      document.tasks.length +
+      document.scheduleRecords.length ===
+    0
+  )
+    lines.push("No care records or saved schedule decisions yet.");
   lines.push("", "## Needs checking", "");
   const checks = needsChecking(document);
   lines.push(

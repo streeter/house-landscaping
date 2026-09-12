@@ -682,6 +682,53 @@ button:disabled {
 .needs-checking li {
   margin: 5px 0;
 }
+.care-workspace {
+  margin: 30px 0;
+}
+.care-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.care-card {
+  border: 1px solid #c8d5c4;
+  border-radius: 12px;
+  padding: 18px;
+  background: #f8faf6;
+}
+.care-card h3 {
+  margin-top: 0;
+}
+.care-card label,
+.care-card .target-field {
+  display: grid;
+  gap: 5px;
+  margin: 10px 0;
+  font-size: 0.83rem;
+}
+.care-card input,
+.care-card select,
+.care-card textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid #bfcdbb;
+  border-radius: 6px;
+  font: inherit;
+}
+.care-card ol {
+  padding-left: 22px;
+  max-height: 300px;
+  overflow: auto;
+}
+.care-card li {
+  margin: 8px 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.care-card li button {
+  margin-left: 6px;
+}
 
 @media (max-width: 800px) {
   .workspace-layout {
