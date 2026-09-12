@@ -17,6 +17,12 @@ test("local map editor adjusts geometry without writing source files", async ({
     .selectOption("patio");
   await page.getByRole("button", { name: /^1\. 10,/ }).click();
   await page.getByRole("spinbutton", { name: "X (south)" }).fill("11");
+  await page
+    .getByRole("combobox", { name: "Surface type" })
+    .selectOption("planter");
+  await expect(
+    page.getByRole("combobox", { name: "Surface type" }),
+  ).toHaveValue("planter");
   await expect(
     page.getByRole("button", { name: "Save to repository" }),
   ).toBeEnabled();
