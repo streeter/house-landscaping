@@ -15,8 +15,12 @@ function fixture() {
   settings.monthlyWaterBudgetEnabled = { value: false, status: "confirmed" };
   settings.rainDelayDays = { value: 0, status: "confirmed" };
   settings.sensorAdjustment = { value: "", status: "confirmed" };
-  for (const program of settings.programs)
+  for (const program of settings.programs) {
+    program.weekdays = [];
+    program.startTimes = [];
+    program.stationRuntimes = [];
     program.waterBudgetPercent = { value: 100, status: "confirmed" };
+  }
   document.zones[0]!.stationNumber = 1;
   document.zones[1]!.stationNumber = 2;
   document.zones[0]!.polygons = [

@@ -20,7 +20,9 @@ test("controller edits regenerate the predicted file timeline", async ({
   await schedule.getByLabel("Sensor / weather adjustment").fill("none");
   const program = schedule.getByRole("group", { name: "Program A" });
   await program.getByLabel("Mon").check();
-  await program.getByRole("button", { name: "Add start" }).click();
+  await program.getByLabel("Wed").uncheck();
+  await program.getByLabel("Fri").uncheck();
+  await program.getByLabel("Start 1", { exact: true }).fill("08:00");
   await program.getByLabel("Station 1").fill("10");
   await program.getByLabel("Basic water budget (%)").fill("100");
   const zone = page.getByRole("region", { name: "Irrigation zone editor" });
