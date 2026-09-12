@@ -405,6 +405,28 @@ button:disabled {
 .plant-details .coverage-zone-choice input {
   width: auto;
 }
+.group-details {
+  border: 1px solid #d5e0cd;
+  border-radius: 9px;
+  background: #f6f8f2;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+.group-details p {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #607464;
+}
+.group-details .plant-field-grid {
+  margin: 3px 0;
+}
+.group-details .plant-field-grid label {
+  margin-bottom: 5px;
+}
+.group-warning {
+  color: #a7432f !important;
+  font-weight: 650;
+}
 .property-section {
   max-width: 640px;
 }

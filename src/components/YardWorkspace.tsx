@@ -2,8 +2,11 @@ import { useEffect, useRef, useState, type PointerEvent } from "react";
 import {
   coveringZoneIds,
   effectiveZoneIds,
+  groupCrossingZoneIds,
   inferSurfaceId,
+  pointInPolygon,
 } from "../domain/geometry";
+import { splitPlantGroup } from "../domain/groups";
 import type { Plant, YardDocumentV1 } from "../domain/document";
 import type { Point } from "../property-base";
 import { ZoneLayers } from "./ZoneLayers";
@@ -47,6 +50,9 @@ function createPlant(point: Point): Plant {
 export function YardWorkspace({ document, onChange }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
+  const [drawingGroup, setDrawingGroup] = useState(false);
+  const [groupPoints, setGroupPoints] = useState<Point[]>([]);
+  const [groupError, setGroupError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState<Point>([0, 0]);
   const [showBase, setShowBase] = useState(true);
@@ -163,7 +169,7 @@ export function YardWorkspace({ document, onChange }: Props) {
   };
 
   const startDrag = (event: PointerEvent<SVGCircleElement>, plant: Plant) => {
-    if (placing) return;
+    if (placing || drawingGroup) return;
     event.stopPropagation();
     event.preventDefault();
     dragRef.current = { id: plant.id, point: plant.position };
@@ -221,6 +227,40 @@ export function YardWorkspace({ document, onChange }: Props) {
     setSelectedId(clone.id);
   };
 
+  const finishGroupArea = () => {
+    if (!selected || groupPoints.length < 3) return;
+    if (!pointInPolygon(selected.position, groupPoints)) {
+      setGroupError("Group area must include the plant marker.");
+      return;
+    }
+    updatePlant(selected.id, (plant) => ({
+      ...plant,
+      group: { count: plant.group?.count ?? 2, area: groupPoints },
+    }));
+    setGroupPoints([]);
+    setDrawingGroup(false);
+    setGroupError(null);
+  };
+
+  const splitGroup = () => {
+    if (!selected?.group) return;
+    try {
+      const [first, second] = splitPlantGroup(selected, crypto.randomUUID());
+      commit({
+        ...document,
+        plants: [
+          ...document.plants.map((plant) =>
+            plant.id === selected.id ? first : plant,
+          ),
+          second,
+        ],
+      });
+      setGroupError(null);
+    } catch (error) {
+      setGroupError(error instanceof Error ? error.message : String(error));
+    }
+  };
+
   const setField = (
     field:
       | "label"
@@ -249,11 +289,49 @@ export function YardWorkspace({ document, onChange }: Props) {
       <div className="workspace-toolbar">
         <button
           type="button"
-          onClick={() => setPlacing(!placing)}
+          onClick={() => {
+            setPlacing(!placing);
+            setDrawingGroup(false);
+            setGroupPoints([]);
+          }}
           aria-pressed={placing}
         >
           {placing ? "Cancel placement" : "Place plant"}
         </button>
+        {selected &&
+          (!drawingGroup ? (
+            <button
+              type="button"
+              className="subtle-button"
+              onClick={() => {
+                setDrawingGroup(true);
+                setPlacing(false);
+                setGroupPoints([]);
+              }}
+            >
+              Draw group area
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={finishGroupArea}
+                disabled={groupPoints.length < 3}
+              >
+                Finish group area ({groupPoints.length})
+              </button>
+              <button
+                type="button"
+                className="subtle-button"
+                onClick={() => {
+                  setDrawingGroup(false);
+                  setGroupPoints([]);
+                }}
+              >
+                Cancel group area
+              </button>
+            </>
+          ))}
         <button
           type="button"
           className="subtle-button"
@@ -357,7 +435,9 @@ export function YardWorkspace({ document, onChange }: Props) {
         <span>
           {placing
             ? "Tap or click the property to place a plant."
-            : "Select a plant or drag its marker."}
+            : drawingGroup
+              ? "Click at least three points around the counted group."
+              : "Select a plant or drag its marker."}
         </span>
       </div>
       <div className="workspace-layout">
@@ -369,6 +449,11 @@ export function YardWorkspace({ document, onChange }: Props) {
             aria-label="Interactive yard map"
             onClick={(event) => {
               if (placing) placePlant(svgPoint(event.clientX, event.clientY));
+              else if (drawingGroup)
+                setGroupPoints((points) => [
+                  ...points,
+                  svgPoint(event.clientX, event.clientY),
+                ]);
             }}
             onPointerMove={(event) => {
               if (dragRef.current) {
@@ -473,6 +558,14 @@ export function YardWorkspace({ document, onChange }: Props) {
                   </g>
                 );
               })}
+            {groupPoints.length > 0 && (
+              <polyline
+                points={groupPoints.map(([x, y]) => `${x},${y}`).join(" ")}
+                fill="none"
+                stroke="#b64b2b"
+                strokeWidth=".4"
+              />
+            )}
           </svg>
           <figcaption>
             North points left. Coordinates and approximate distances are in
@@ -797,6 +890,127 @@ export function YardWorkspace({ document, onChange }: Props) {
                   }
                 />
               </label>
+              <label>
+                Group count
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={selected.group?.count ?? 1}
+                  onChange={(event) => {
+                    const count = Math.floor(Number(event.target.value));
+                    updatePlant(selected.id, (plant) => {
+                      const [x, y] = plant.position;
+                      const area: Point[] = [
+                        [clamp(x - 1, 0, 40), clamp(y - 1, 0, 120)],
+                        [clamp(x + 1, 0, 40), clamp(y - 1, 0, 120)],
+                        [clamp(x + 1, 0, 40), clamp(y + 1, 0, 120)],
+                        [clamp(x - 1, 0, 40), clamp(y + 1, 0, 120)],
+                      ];
+                      return {
+                        ...plant,
+                        group:
+                          count > 1
+                            ? { count, area: plant.group?.area ?? area }
+                            : null,
+                      };
+                    });
+                  }}
+                />
+              </label>
+              {selected.group && (
+                <div className="group-details">
+                  <p>
+                    Group area: {selected.group.area.length} vertices. Draw a
+                    new area on the map or adjust coordinates here.
+                  </p>
+                  {selected.group.area.map(([x, y], index) => (
+                    <div key={index} className="plant-field-grid">
+                      <label>
+                        Vertex {index + 1} X
+                        <input
+                          type="number"
+                          min="0"
+                          max="40"
+                          step="0.1"
+                          value={x}
+                          onChange={(event) =>
+                            updatePlant(selected.id, (plant) => ({
+                              ...plant,
+                              group: plant.group
+                                ? {
+                                    ...plant.group,
+                                    area: plant.group.area.map(
+                                      (point, vertex) =>
+                                        vertex === index
+                                          ? clampPoint([
+                                              Number(event.target.value),
+                                              point[1],
+                                            ])
+                                          : point,
+                                    ),
+                                  }
+                                : null,
+                            }))
+                          }
+                        />
+                      </label>
+                      <label>
+                        Y
+                        <input
+                          type="number"
+                          min="0"
+                          max="120"
+                          step="0.1"
+                          value={y}
+                          onChange={(event) =>
+                            updatePlant(selected.id, (plant) => ({
+                              ...plant,
+                              group: plant.group
+                                ? {
+                                    ...plant.group,
+                                    area: plant.group.area.map(
+                                      (point, vertex) =>
+                                        vertex === index
+                                          ? clampPoint([
+                                              point[0],
+                                              Number(event.target.value),
+                                            ])
+                                          : point,
+                                    ),
+                                  }
+                                : null,
+                            }))
+                          }
+                        />
+                      </label>
+                    </div>
+                  ))}
+                  {groupCrossingZoneIds(selected, document.zones).length >
+                    0 && (
+                    <p className="group-warning">
+                      This group crosses coverage from{" "}
+                      {groupCrossingZoneIds(selected, document.zones).join(
+                        ", ",
+                      )}
+                      . Split it or redraw the group area before using one
+                      watering summary.
+                    </p>
+                  )}
+                  {groupError && (
+                    <p className="group-warning" role="alert">
+                      {groupError}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    className="subtle-button"
+                    onClick={splitGroup}
+                  >
+                    Split group
+                  </button>
+                </div>
+              )}
               <label>
                 Notes
                 <textarea
