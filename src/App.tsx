@@ -18,8 +18,11 @@ import {
   loadBrowserDraft,
   newWorkingCopy,
   openYardText,
+  prepareMapUpgrade,
   saveBrowserDraft,
   serializeYardFile,
+  type DraftRead,
+  type MapUpgradePreview,
   type WorkingCopy,
 } from "./domain/files";
 
@@ -30,11 +33,16 @@ interface AdviceBundle {
   mapPng: Blob;
 }
 
-function initialDraft(): { copy: WorkingCopy | null; error: string | null } {
+function initialDraft(): DraftRead {
   try {
     return loadBrowserDraft(window.localStorage);
   } catch (error) {
-    return { copy: null, error: `Browser draft unavailable: ${String(error)}` };
+    return {
+      copy: null,
+      upgrade: null,
+      unreadableRaw: null,
+      error: `Browser draft unavailable: ${String(error)}`,
+    };
   }
 }
 
@@ -51,15 +59,23 @@ export function App() {
   const [copy, setCopy] = useState<WorkingCopy>(
     () => startup.copy ?? newWorkingCopy(),
   );
-  const [ready, setReady] = useState(startup.copy === null);
+  const [ready, setReady] = useState(
+    startup.copy === null &&
+      startup.upgrade === null &&
+      startup.unreadableRaw === null,
+  );
   const [storageError, setStorageError] = useState<string | null>(
     startup.error,
   );
   const [fileError, setFileError] = useState<string | null>(null);
+  const [pendingUpgrade, setPendingUpgrade] =
+    useState<MapUpgradePreview | null>(null);
+  const [upgradeNotice, setUpgradeNotice] = useState<string | null>(null);
   const [adviceBundle, setAdviceBundle] = useState<AdviceBundle | null>(null);
   const [generatingAdvice, setGeneratingAdvice] = useState(false);
   const [past, setPast] = useState<WorkingCopy["document"][]>([]);
   const [future, setFuture] = useState<WorkingCopy["document"][]>([]);
+  const activeUpgrade = pendingUpgrade ?? (!ready ? startup.upgrade : null);
 
   useEffect(() => {
     if (ready) setStorageError(saveDraft(copy));
@@ -119,15 +135,32 @@ export function App() {
 
   const startNew = () => {
     if (
-      copy.dirtySinceFile &&
-      !window.confirm("Discard edits made since the last file save?")
+      ((!ready && (startup.upgrade || startup.unreadableRaw)) ||
+        copy.dirtySinceFile) &&
+      !window.confirm("Discard the current yard and any unsaved edits?")
     )
       return;
     setCopy(newWorkingCopy());
     setPast([]);
     setFuture([]);
     setReady(true);
+    setPendingUpgrade(null);
+    setUpgradeNotice(null);
     setFileError(null);
+  };
+
+  const acceptUpgrade = (upgrade: MapUpgradePreview) => {
+    setCopy(upgrade.copy);
+    setPast([]);
+    setFuture([]);
+    setReady(true);
+    setPendingUpgrade(null);
+    setFileError(null);
+    setUpgradeNotice(
+      upgrade.plantsToReview.length > 0
+        ? `Review supporting surfaces for: ${upgrade.plantsToReview.join(", ")}.`
+        : null,
+    );
   };
 
   const openFile = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -135,6 +168,7 @@ export function App() {
     event.target.value = "";
     if (!file) return;
     if (
+      ready &&
       copy.dirtySinceFile &&
       !window.confirm(
         "Replace the working yard with this file? Unsaved edits will be lost.",
@@ -142,11 +176,26 @@ export function App() {
     )
       return;
     try {
-      const next = openYardText(await file.text(), file.name);
+      const text = await file.text();
+      let next: WorkingCopy;
+      try {
+        next = openYardText(text, file.name);
+      } catch (error) {
+        const upgrade = prepareMapUpgrade(
+          JSON.parse(text) as unknown,
+          file.name,
+        );
+        if (!upgrade) throw error;
+        setPendingUpgrade(upgrade);
+        setFileError(null);
+        return;
+      }
       setCopy(next);
       setPast([]);
       setFuture([]);
       setReady(true);
+      setPendingUpgrade(null);
+      setUpgradeNotice(null);
       setFileError(null);
     } catch (error) {
       setFileError(
@@ -208,7 +257,7 @@ export function App() {
         <p className="dimensions">40 × 120 ft · approximately 4,800 sq ft</p>
       </header>
 
-      {!ready && startup.copy && (
+      {!ready && startup.copy && !pendingUpgrade && (
         <section className="resume-panel" aria-label="Resume browser draft">
           <h2>Continue your yard?</h2>
           <p>
@@ -217,6 +266,32 @@ export function App() {
           </p>
           <button type="button" onClick={() => setReady(true)}>
             Resume browser draft
+          </button>
+          <button type="button" className="subtle-button" onClick={startNew}>
+            Start a new yard
+          </button>
+        </section>
+      )}
+
+      {!ready && startup.unreadableRaw && !pendingUpgrade && (
+        <section className="resume-panel" aria-label="Unopened browser draft">
+          <h2>Browser draft needs attention</h2>
+          <p>
+            This browser has a yard draft that cannot be opened with the current
+            map. Download a backup before starting a new yard, or open a saved
+            file. The draft stays in this browser until you choose a
+            replacement.
+          </p>
+          <button
+            type="button"
+            onClick={() =>
+              downloadText(
+                startup.unreadableRaw!,
+                "yard-browser-draft-backup.json",
+              )
+            }
+          >
+            Download draft backup
           </button>
           <button type="button" className="subtle-button" onClick={startNew}>
             Start a new yard
@@ -289,6 +364,37 @@ export function App() {
         <p className="error-message" role="alert">
           {fileError}
         </p>
+      )}
+      {upgradeNotice && <p role="status">{upgradeNotice}</p>}
+
+      {activeUpgrade && (
+        <section className="resume-panel" aria-label="Update property map">
+          <h2>Update this yard to the current map?</h2>
+          <p>
+            This yard uses map version {activeUpgrade.previousVersion}. The
+            current map adds {activeUpgrade.addedSurfaceLabels.join(", ")}.
+            Existing plants, zones, and care records will be kept. Save a new
+            yard file after updating.
+          </p>
+          {activeUpgrade.plantsToReview.length > 0 && (
+            <p>
+              Check supporting surfaces for:{" "}
+              {activeUpgrade.plantsToReview.join(", ")}.
+            </p>
+          )}
+          <button type="button" onClick={() => acceptUpgrade(activeUpgrade)}>
+            Update map and open yard
+          </button>
+          <button
+            type="button"
+            className="subtle-button"
+            onClick={() =>
+              pendingUpgrade ? setPendingUpgrade(null) : startNew()
+            }
+          >
+            {pendingUpgrade ? "Cancel" : "Start a new yard"}
+          </button>
+        </section>
       )}
 
       {ready && adviceBundle && (
