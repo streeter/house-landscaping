@@ -1,4 +1,5 @@
 import type { ControllerSettings, YardDocumentV1 } from "../domain/document";
+import { applyDefaultSchedule } from "../domain/default-schedule";
 import { calculateYardSchedule } from "../domain/timing";
 
 interface Props {
@@ -60,6 +61,33 @@ export function ControllerWorkspace({ document, onChange }: Props) {
         not observed watering. Unknown or ambiguous settings are called out
         below.
       </p>
+      <div
+        className="documented-schedule"
+        aria-label="Documented default schedule"
+      >
+        <p>
+          Documented default: Program A runs Monday, Wednesday, and Friday at
+          8:00 AM. Programs B and C retain their old runtimes and all weekdays,
+          with all start times off.
+        </p>
+        <p>
+          Station 9 is programmed for 10 minutes in A, but no watering area was
+          found during manual testing; it appears unused. The station runtimes
+          total 210 programmed minutes per A cycle, including Station 9.
+        </p>
+        <button
+          type="button"
+          className="subtle-button"
+          onClick={() => onChange(applyDefaultSchedule(document))}
+        >
+          Load documented schedule
+        </button>
+        <p>
+          Replaces A/B/C days, start times, and runtimes. Undo restores the
+          previous schedule. Verify the replacement on the controller before
+          marking it confirmed.
+        </p>
+      </div>
       <div className="controller-grid">
         <label>
           Reference Monday
@@ -306,11 +334,30 @@ export function ControllerWorkspace({ document, onChange }: Props) {
             <div className="program-settings">
               <div>
                 <strong>Start times</strong>
+                {program.startTimes.length === 0 ? (
+                  <p>
+                    All three start times are off. This program does not run
+                    automatically.
+                  </p>
+                ) : (
+                  program.startTimes.length < 3 && (
+                    <p>
+                      Off:{" "}
+                      {Array.from(
+                        { length: 3 - program.startTimes.length },
+                        (_, index) =>
+                          `Start ${program.startTimes.length + index + 1}`,
+                      ).join(", ")}
+                      .
+                    </p>
+                  )
+                )}
                 {program.startTimes.map((time, index) => (
                   <label key={index}>
                     Start {index + 1}
                     <input
                       type="time"
+                      aria-label={`Start ${index + 1}`}
                       value={time}
                       onChange={(event) =>
                         updateProgram(program.id, (current) => ({
@@ -357,6 +404,7 @@ export function ControllerWorkspace({ document, onChange }: Props) {
               </div>
               <div>
                 <strong>Station runtimes (minutes)</strong>
+                <p>0 minutes = Off.</p>
                 <div className="runtime-grid">
                   {Array.from({ length: 9 }, (_, index) => index + 1).map(
                     (station) => (

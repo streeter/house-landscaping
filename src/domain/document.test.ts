@@ -6,7 +6,7 @@ import {
 } from "./document";
 
 describe("yard document handoff", () => {
-  test("new file starts with eight empty, unmapped zones and unknown controller settings", () => {
+  test("new file starts with eight empty, unmapped zones, the documented schedule, and unknown execution settings", () => {
     const document = newYardDocument(new Date("2026-09-11T18:00:00Z"));
     expect(document.zones).toHaveLength(8);
     expect(

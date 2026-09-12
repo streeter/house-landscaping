@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { defaultSchedulePrograms } from "./default-schedule";
 import {
   propertyBase,
   type PropertyBase,
@@ -283,14 +284,7 @@ export function newYardDocument(now = new Date()): YardDocumentV1 {
     monthlyWaterBudgetEnabled: { value: null, status: "unknown" },
     rainDelayDays: { value: null, status: "unknown" },
     sensorAdjustment: { value: null, status: "unknown" },
-    programs: (["A", "B", "C"] as const).map((programId) => ({
-      id: programId,
-      weekdays: [],
-      startTimes: [],
-      stationRuntimes: [],
-      waterBudgetPercent: { value: null, status: "unknown" },
-      monthlyWaterBudget: [],
-    })),
+    programs: defaultSchedulePrograms(),
   };
   return {
     schemaVersion: 1,
