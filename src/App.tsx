@@ -4,7 +4,14 @@ import { YardWorkspace } from "./components/YardWorkspace";
 import { ZoneWorkspace } from "./components/ZoneWorkspace";
 import { ControllerWorkspace } from "./components/ControllerWorkspace";
 import {
+  needsChecking,
+  renderAdvicePrompt,
+  renderYardSummary,
+} from "./domain/advice";
+import { renderAdviceMapPng } from "./domain/advice-map";
+import {
   createFileSnapshot,
+  downloadBlob,
   downloadText,
   editWorkingCopy,
   loadBrowserDraft,
@@ -14,6 +21,13 @@ import {
   serializeYardFile,
   type WorkingCopy,
 } from "./domain/files";
+
+interface AdviceBundle {
+  snapshot: WorkingCopy;
+  summary: string;
+  prompt: string;
+  mapPng: Blob;
+}
 
 function initialDraft(): { copy: WorkingCopy | null; error: string | null } {
   try {
@@ -41,6 +55,8 @@ export function App() {
     startup.error,
   );
   const [fileError, setFileError] = useState<string | null>(null);
+  const [adviceBundle, setAdviceBundle] = useState<AdviceBundle | null>(null);
+  const [generatingAdvice, setGeneratingAdvice] = useState(false);
 
   useEffect(() => {
     if (ready) setStorageError(saveDraft(copy));
@@ -116,6 +132,27 @@ export function App() {
     }
   };
 
+  const generateAdvice = async () => {
+    setGeneratingAdvice(true);
+    setFileError(null);
+    try {
+      const snapshot = createFileSnapshot(copy);
+      const mapPng = await renderAdviceMapPng(snapshot.document);
+      setAdviceBundle({
+        snapshot,
+        summary: renderYardSummary(snapshot.document),
+        prompt: renderAdvicePrompt(snapshot.document),
+        mapPng,
+      });
+    } catch (error) {
+      setFileError(
+        `Could not prepare advice export: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    } finally {
+      setGeneratingAdvice(false);
+    }
+  };
+
   return (
     <main className="app-shell">
       <header className="page-header">
@@ -163,6 +200,13 @@ export function App() {
         </button>
         <button
           type="button"
+          onClick={() => void generateAdvice()}
+          disabled={!ready || generatingAdvice}
+        >
+          {generatingAdvice ? "Preparing advice export…" : "Export for Advice"}
+        </button>
+        <button
+          type="button"
           className="subtle-button"
           onClick={startNew}
           disabled={!ready}
@@ -185,6 +229,77 @@ export function App() {
         <p className="error-message" role="alert">
           {fileError}
         </p>
+      )}
+
+      {ready && adviceBundle && (
+        <section className="advice-export" aria-label="Advice export bundle">
+          <h2>Advice export ready</h2>
+          <p>
+            Snapshot {adviceBundle.snapshot.document.exportId} ·{" "}
+            {adviceBundle.snapshot.document.exportedAt}. Download each artifact
+            and attach the JSON, summary, and map to your external advice
+            request.
+          </p>
+          {copy.document.modifiedAt !==
+            adviceBundle.snapshot.document.modifiedAt && (
+            <p className="stale-note">
+              This snapshot predates your latest edits. Generate a new one for
+              current data.
+            </p>
+          )}
+          <div className="file-bar">
+            <button
+              type="button"
+              onClick={() => {
+                downloadText(
+                  serializeYardFile(adviceBundle.snapshot),
+                  "yard.json",
+                );
+                if (
+                  copy.document.modifiedAt ===
+                  adviceBundle.snapshot.document.modifiedAt
+                )
+                  setCopy(adviceBundle.snapshot);
+              }}
+            >
+              Download yard.json
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                downloadText(
+                  adviceBundle.summary,
+                  "yard-summary.md",
+                  "text/markdown",
+                )
+              }
+            >
+              Download yard-summary.md
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadBlob(adviceBundle.mapPng, "yard-map.png")}
+            >
+              Download yard-map.png
+            </button>
+          </div>
+          <label>
+            Copyable advice prompt
+            <textarea readOnly rows={5} value={adviceBundle.prompt} />
+          </label>
+          <button
+            type="button"
+            onClick={() =>
+              void navigator.clipboard
+                .writeText(adviceBundle.prompt)
+                .catch((error: unknown) =>
+                  setFileError(`Could not copy prompt: ${String(error)}`),
+                )
+            }
+          >
+            Copy prompt
+          </button>
+        </section>
       )}
 
       {ready && (
@@ -210,6 +325,17 @@ export function App() {
               setCopy((previous) => editWorkingCopy(previous, () => next))
             }
           />
+          <section className="needs-checking" aria-label="Needs checking">
+            <h2>Needs checking</h2>
+            <ul>
+              {needsChecking(copy.document).map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+            {needsChecking(copy.document).length === 0 && (
+              <p>No outstanding checks identified.</p>
+            )}
+          </section>
           <div className="property-section">
             <aside className="map-notes" aria-label="Property details">
               <h2>Property details</h2>
