@@ -3,6 +3,7 @@ import {
   parseYardDocument,
   type YardDocumentV1,
 } from "./document";
+import { calculateYardSchedule } from "./timing";
 
 export const DRAFT_KEY = "yard-planner-draft-v1";
 
@@ -34,7 +35,7 @@ export function loadBrowserDraft(store: DraftStore): DraftRead {
       throw new Error("Invalid browser draft metadata");
     return {
       copy: {
-        document: parseYardDocument(envelope.document),
+        document: withCalculation(parseYardDocument(envelope.document)),
         dirtySinceFile: envelope.dirtySinceFile,
         filename: envelope.filename,
       },
@@ -66,7 +67,7 @@ export function openYardText(
 ): WorkingCopy {
   const input: unknown = JSON.parse(text);
   return {
-    document: parseYardDocument(input),
+    document: withCalculation(parseYardDocument(input)),
     dirtySinceFile: false,
     filename,
   };
@@ -74,7 +75,7 @@ export function openYardText(
 
 export function newWorkingCopy(now = new Date()): WorkingCopy {
   return {
-    document: newYardDocument(now),
+    document: withCalculation(newYardDocument(now)),
     dirtySinceFile: true,
     filename: "yard.json",
   };
@@ -87,7 +88,10 @@ export function editWorkingCopy(
 ): WorkingCopy {
   return {
     ...copy,
-    document: { ...update(copy.document), modifiedAt: now.toISOString() },
+    document: withCalculation({
+      ...update(copy.document),
+      modifiedAt: now.toISOString(),
+    }),
     dirtySinceFile: true,
   };
 }
@@ -100,9 +104,15 @@ export function createFileSnapshot(
   const stamp = now.toISOString();
   return {
     ...copy,
-    document: { ...copy.document, exportId, exportedAt: stamp },
+    document: withCalculation(
+      parseYardDocument({ ...copy.document, exportId, exportedAt: stamp }),
+    ),
     dirtySinceFile: false,
   };
+}
+
+function withCalculation(document: YardDocumentV1): YardDocumentV1 {
+  return { ...document, calculated: calculateYardSchedule(document) };
 }
 
 export function serializeYardFile(copy: WorkingCopy): string {

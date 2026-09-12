@@ -564,6 +564,101 @@ button:disabled {
   font-weight: 650;
 }
 
+.controller-workspace {
+  margin: 30px 0;
+  padding: 24px;
+  border: 1px solid #d8e0d4;
+  border-radius: 14px;
+  background: #f8faf6;
+}
+.controller-workspace h2 {
+  margin-top: 0;
+}
+.controller-grid,
+.program-settings,
+.runtime-grid,
+.monthly-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+.controller-workspace label {
+  display: grid;
+  gap: 5px;
+  font-size: 0.82rem;
+}
+.controller-workspace input,
+.controller-workspace select {
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid #bfcdbb;
+  border-radius: 6px;
+  font: inherit;
+}
+.controller-workspace input[type="checkbox"] {
+  width: auto;
+}
+.program-list {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+.program-card {
+  border: 1px solid #c8d5c4;
+  border-radius: 10px;
+  padding: 16px;
+}
+.program-card legend {
+  padding: 0 6px;
+  font-weight: 700;
+}
+.weekday-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+.weekday-list label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.program-settings > div,
+.program-budget {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+.program-budget {
+  margin-top: 18px;
+}
+.runtime-grid {
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+}
+.monthly-grid {
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+}
+.timeline {
+  margin-top: 24px;
+  border-top: 1px solid #c8d5c4;
+  padding-top: 12px;
+}
+.timeline ol {
+  max-height: 320px;
+  overflow: auto;
+  padding-left: 24px;
+}
+.timeline li {
+  padding: 4px 0;
+  font-size: 0.82rem;
+}
+.calculation-status.unresolved {
+  color: #a13b2b;
+}
+.calculation-status.partial {
+  color: #8c6021;
+}
+
 @media (max-width: 800px) {
   .workspace-layout {
     grid-template-columns: 1fr;

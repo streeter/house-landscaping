@@ -74,4 +74,22 @@ describe("yard document handoff", () => {
     expect(parsed.calculated.referenceWeekStart).toBe("2026-06-01");
     expect(parsed.overlapNotes[0]?.stale).toBe(false);
   });
+
+  test("opens earlier files with minute-based station delay", () => {
+    const document = newYardDocument();
+    const old = structuredClone(document) as unknown as {
+      controller: { settings: Record<string, unknown> };
+    };
+    delete old.controller.settings.stationDelaySeconds;
+    old.controller.settings.stationDelayMinutes = {
+      value: 1.5,
+      status: "confirmed",
+    };
+    expect(
+      parseYardDocument(old).controller.settings.stationDelaySeconds,
+    ).toEqual({
+      value: 90,
+      status: "confirmed",
+    });
+  });
 });
