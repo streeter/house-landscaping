@@ -1,3 +1,4 @@
+import { readDraftRaw } from "./drafts";
 import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 
@@ -121,15 +122,15 @@ test("plant duplication, undo/redo, and marker dragging update the draft", async
   await page.mouse.up();
   await expect
     .poll(() =>
-      page.evaluate(() => {
-        const raw = localStorage.getItem("yard-planner-draft-v1");
+      (async () => {
+        const raw = await readDraftRaw(page);
         const parsed = raw
           ? (JSON.parse(raw) as {
               document: { plants: { position: [number, number] }[] };
             })
           : null;
         return parsed?.document.plants[1]?.position[0] ?? null;
-      }),
+      })(),
     )
     .toBeGreaterThan(24.7);
 });

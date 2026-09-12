@@ -1,3 +1,4 @@
+import { readDraftRaw, seedLegacyDraft } from "./drafts";
 import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 
@@ -12,13 +13,13 @@ test("browser draft, downloaded file, fresh browser import, and invalid-file rec
     .fill("America/Los_Angeles");
   await expect
     .poll(() =>
-      page.evaluate(() => {
-        const raw = localStorage.getItem("yard-planner-draft-v1");
+      (async () => {
+        const raw = await readDraftRaw(page);
         return raw
           ? (JSON.parse(raw) as { document: { location: { name: string } } })
               .document.location.name
           : null;
-      }),
+      })(),
     )
     .toBe("Test yard");
   await page.reload();
@@ -83,13 +84,10 @@ test("older browser draft is kept until an additive map update is accepted", asy
 }) => {
   await page.goto("/");
   await expect
-    .poll(() =>
-      page.evaluate(() => localStorage.getItem("yard-planner-draft-v1")),
-    )
+    .poll(() => (async () => await readDraftRaw(page))())
     .not.toBeNull();
-  await page.evaluate(() => {
-    const key = "yard-planner-draft-v1";
-    const raw = localStorage.getItem(key)!;
+  await (async () => {
+    const raw = (await readDraftRaw(page))!;
     const draft = JSON.parse(raw) as {
       document: {
         property: { version: number; surfaces: unknown[] };
@@ -99,20 +97,20 @@ test("older browser draft is kept until an additive map update is accepted", asy
     draft.document.location.name = "Keep this yard";
     draft.document.property.version -= 1;
     draft.document.property.surfaces.pop();
-    localStorage.setItem(key, JSON.stringify(draft));
-  });
+    await seedLegacyDraft(page, JSON.stringify(draft));
+  })();
   await page.reload();
   await expect(
     page.getByRole("heading", { name: "Update this yard to the current map?" }),
   ).toBeVisible();
   await expect
     .poll(() =>
-      page.evaluate(() => {
-        const raw = localStorage.getItem("yard-planner-draft-v1")!;
+      (async () => {
+        const raw = (await readDraftRaw(page))!;
         return (
           JSON.parse(raw) as { document: { property: { version: number } } }
         ).document.property.version;
-      }),
+      })(),
     )
     .toBe(0);
   await page.getByRole("button", { name: "Update map and open yard" }).click();
@@ -121,12 +119,12 @@ test("older browser draft is kept until an additive map update is accepted", asy
   );
   await expect
     .poll(() =>
-      page.evaluate(() => {
-        const raw = localStorage.getItem("yard-planner-draft-v1")!;
+      (async () => {
+        const raw = (await readDraftRaw(page))!;
         return (
           JSON.parse(raw) as { document: { property: { version: number } } }
         ).document.property.version;
-      }),
+      })(),
     )
     .toBe(1);
 });
@@ -139,9 +137,7 @@ test("an older yard file waits for map upgrade approval before replacing the wor
   });
   await page.goto("/");
   await page.getByRole("textbox", { name: "Location" }).fill("Current yard");
-  const raw = await page.evaluate(() =>
-    localStorage.getItem("yard-planner-draft-v1"),
-  );
+  const raw = await (async () => await readDraftRaw(page))();
   expect(raw).not.toBeNull();
   const older = (
     JSON.parse(raw!) as {
@@ -179,17 +175,12 @@ test("an incompatible browser draft is preserved for backup", async ({
 }) => {
   await page.goto("/");
   const raw = '{"document":{"property":{"version":999}}}';
-  await page.evaluate(
-    (value) => localStorage.setItem("yard-planner-draft-v1", value),
-    raw,
-  );
+  await seedLegacyDraft(page, raw);
   await page.reload();
   await expect(
     page.getByRole("heading", { name: "Browser draft needs attention" }),
   ).toBeVisible();
-  expect(
-    await page.evaluate(() => localStorage.getItem("yard-planner-draft-v1")),
-  ).toBe(raw);
+  expect(await (async () => await readDraftRaw(page))()).toBe(raw);
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download draft backup" }).click();
   const download = await downloadPromise;

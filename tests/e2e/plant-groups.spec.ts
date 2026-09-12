@@ -1,3 +1,4 @@
+import { readDraftRaw, seedLegacyDraft } from "./drafts";
 import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 
@@ -6,14 +7,12 @@ test("a mixed group can be drawn and split without losing notes or stable identi
 }) => {
   await page.goto("/");
   await expect
-    .poll(() =>
-      page.evaluate(() => localStorage.getItem("yard-planner-draft-v1")),
-    )
+    .poll(() => (async () => await readDraftRaw(page))())
     .not.toBeNull();
-  await page.evaluate(() => {
-    const draft = JSON.parse(
-      localStorage.getItem("yard-planner-draft-v1")!,
-    ) as { document: { zones: { polygons: [number, number][][] }[] } };
+  await (async () => {
+    const draft = JSON.parse((await readDraftRaw(page))!) as {
+      document: { zones: { polygons: [number, number][][] }[] };
+    };
     draft.document.zones[0]!.polygons = [
       [
         [0, 0],
@@ -30,8 +29,8 @@ test("a mixed group can be drawn and split without losing notes or stable identi
         [10, 20],
       ],
     ];
-    localStorage.setItem("yard-planner-draft-v1", JSON.stringify(draft));
-  });
+    await seedLegacyDraft(page, JSON.stringify(draft));
+  })();
   await page.reload();
   await page.getByRole("button", { name: "Resume browser draft" }).click();
   const map = page.getByRole("img", { name: "Interactive yard map" });
@@ -74,12 +73,12 @@ test("a mixed group can be drawn and split without losing notes or stable identi
   await expect(page.locator(".group-warning")).toContainText(
     "crosses coverage",
   );
-  const originalId = await page.evaluate(() => {
-    const draft = JSON.parse(
-      localStorage.getItem("yard-planner-draft-v1")!,
-    ) as { document: { plants: { id: string }[] } };
+  const originalId = await (async () => {
+    const draft = JSON.parse((await readDraftRaw(page))!) as {
+      document: { plants: { id: string }[] };
+    };
     return draft.document.plants[0]!.id;
-  });
+  })();
   await page.getByRole("button", { name: "Split group" }).click();
   await expect(
     page.getByRole("heading", { name: "Existing (2)" }),

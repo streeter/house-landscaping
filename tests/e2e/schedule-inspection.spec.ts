@@ -1,3 +1,4 @@
+import { readDraftRaw, seedLegacyDraft } from "./drafts";
 import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import type { YardDocumentV1 } from "../../src/domain/document";
@@ -8,14 +9,12 @@ test("a two-zone overlap shows one elapsed period and both source events", async
 }) => {
   await page.goto("/");
   await expect
-    .poll(() =>
-      page.evaluate(() => localStorage.getItem("yard-planner-draft-v1")),
-    )
+    .poll(() => (async () => await readDraftRaw(page))())
     .not.toBeNull();
-  await page.evaluate(() => {
-    const envelope = JSON.parse(
-      localStorage.getItem("yard-planner-draft-v1")!,
-    ) as { document: YardDocumentV1 };
+  await (async () => {
+    const envelope = JSON.parse((await readDraftRaw(page))!) as {
+      document: YardDocumentV1;
+    };
     const yard = envelope.document;
     yard.referenceWeekStart = "2026-09-07";
     yard.location.timezone = "America/Los_Angeles";
@@ -86,8 +85,8 @@ test("a two-zone overlap shows one elapsed period and both source events", async
         stale: false,
       },
     ];
-    localStorage.setItem("yard-planner-draft-v1", JSON.stringify(envelope));
-  });
+    await seedLegacyDraft(page, JSON.stringify(envelope));
+  })();
   await page.reload();
   await page.getByRole("button", { name: "Resume browser draft" }).click();
   await page.getByRole("button", { name: /Test shrub/ }).click();

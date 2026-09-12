@@ -1,3 +1,4 @@
+import { readDraftRaw, seedLegacyDraft } from "./drafts";
 import { readFile } from "node:fs/promises";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
@@ -28,14 +29,10 @@ test("source note and manual plant coverage remain separate after a zone edit", 
 }) => {
   await page.goto("/");
   await expect
-    .poll(() =>
-      page.evaluate(() => localStorage.getItem("yard-planner-draft-v1")),
-    )
+    .poll(() => (async () => await readDraftRaw(page))())
     .not.toBeNull();
-  await page.evaluate(() => {
-    const draft = JSON.parse(
-      localStorage.getItem("yard-planner-draft-v1")!,
-    ) as {
+  await (async () => {
+    const draft = JSON.parse((await readDraftRaw(page))!) as {
       document: {
         zones: {
           polygons: [number, number][][];
@@ -61,8 +58,8 @@ test("source note and manual plant coverage remain separate after a zone edit", 
     ];
     draft.document.zones[0]!.stationNumber = 2;
     draft.document.zones[1]!.stationNumber = 5;
-    localStorage.setItem("yard-planner-draft-v1", JSON.stringify(draft));
-  });
+    await seedLegacyDraft(page, JSON.stringify(draft));
+  })();
   await page.reload();
   await page.getByRole("button", { name: "Resume browser draft" }).click();
 
