@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { IncomingYard, ShareYard } from "./components/YardSharing";
 import { propertyBase } from "./property-base";
 import { YardWorkspace } from "./components/YardWorkspace";
 import { ZoneWorkspace } from "./components/ZoneWorkspace";
@@ -215,16 +216,8 @@ export function App() {
     });
   };
 
-  const startNew = () => {
-    const name = window.prompt("New configuration name", "New yard")?.trim();
-    if (!name) return;
-    if (name.length > 100) {
-      setFileError("Use a configuration name of 100 characters or fewer.");
-      return;
-    }
-    if (!persistCurrent()) return;
-    const next = newWorkingCopy();
-    next.filename = `${name.replace(/[\\/]/g, "")}.json`;
+  const addConfiguration = (name: string, next: WorkingCopy): boolean => {
+    if (!persistCurrent()) return false;
     const entry = makeEntry(name, next);
     const current = session.current!.library;
     if (
@@ -234,10 +227,23 @@ export function App() {
         entries: [...current.entries, entry],
       })
     )
-      return;
+      return false;
     setCopy(next);
     setReady(true);
     clearWorkspace();
+    return true;
+  };
+
+  const startNew = () => {
+    const name = window.prompt("New configuration name", "New yard")?.trim();
+    if (!name) return;
+    if (name.length > 100) {
+      setFileError("Use a configuration name of 100 characters or fewer.");
+      return;
+    }
+    const next = newWorkingCopy();
+    next.filename = `${name.replace(/[\\/]/g, "")}.json`;
+    addConfiguration(name, next);
   };
 
   const acceptUpgrade = (upgrade: MapUpgradePreview) => {
@@ -363,6 +369,8 @@ export function App() {
         </div>
         <p className="dimensions">40 × 120 ft · approximately 4,800 sq ft</p>
       </header>
+
+      <IncomingYard onImport={addConfiguration} />
 
       {!ready && startup.copy && !pendingUpgrade && (
         <section className="resume-panel" aria-label="Resume browser draft">
@@ -509,6 +517,9 @@ export function App() {
             : `Saved/exported to ${copy.filename}`}
         </span>
       </div>
+      {ready && (
+        <ShareYard key={selected.id} copy={copy} name={selected.name} />
+      )}
       {fileError && (
         <p className="error-message" role="alert">
           {fileError}
