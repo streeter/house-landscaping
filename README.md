@@ -6,6 +6,8 @@ The app autosaves its working copy in the current browser. On a later visit, cho
 
 Use **Place plant** and tap or click the yard map to add a marker. Select an inventory entry to locate it, drag a marker to move it, and edit its plant, growing-setting, and surface details in the panel. The map has zoom, pan, layer switches, and undo/redo. Retiring a plant keeps its record for history; planned plants appear separately from existing ones.
 
+For counted groups, enter the count and draw the area they occupy. The editor warns when that area crosses coverage zones. **Split group** divides the drawn area into two records, retains the notes and original ID on one half, and recalculates each half's coverage. Adjust the resulting outlines when the actual planting layout differs from the automatic split.
+
 In **Irrigation coverage**, assign each yard zone its actual controller station and draw one or more coverage polygons. Drag or numerically edit vertices, add or delete coverage pieces, and click any point to list all covering zones. Overlap areas are hatched on both maps. Zone geometry changes recheck existing overlap notes.
 
 Click an overlap to record whether its zones turn on the same hose or independent sources. Notes stay attached to their mapped point and are flagged for checking after geometry changes. A plant’s **Correct coverage** control records observed zone membership and a reason separately from the geometric result; it never implies a shared hose.
