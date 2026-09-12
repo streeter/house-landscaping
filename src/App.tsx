@@ -58,24 +58,63 @@ export function App() {
   const [fileError, setFileError] = useState<string | null>(null);
   const [adviceBundle, setAdviceBundle] = useState<AdviceBundle | null>(null);
   const [generatingAdvice, setGeneratingAdvice] = useState(false);
+  const [past, setPast] = useState<WorkingCopy["document"][]>([]);
+  const [future, setFuture] = useState<WorkingCopy["document"][]>([]);
 
   useEffect(() => {
     if (ready) setStorageError(saveDraft(copy));
   }, [copy, ready]);
 
+  const changeDocument = (next: WorkingCopy["document"]) => {
+    setPast((items) => [...items, copy.document].slice(-50));
+    setFuture([]);
+    setCopy((previous) => editWorkingCopy(previous, () => next));
+  };
+
+  const undo = () => {
+    const previous = past.at(-1);
+    if (!previous) return;
+    setPast(past.slice(0, -1));
+    setFuture([copy.document, ...future]);
+    setCopy((current) => editWorkingCopy(current, () => previous));
+  };
+
+  const redo = () => {
+    const next = future[0];
+    if (!next) return;
+    setFuture(future.slice(1));
+    setPast([...past, copy.document]);
+    setCopy((current) => editWorkingCopy(current, () => next));
+  };
+
+  useEffect(() => {
+    const shortcut = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "z")
+        return;
+      if (
+        event.target instanceof HTMLElement &&
+        ["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName)
+      )
+        return;
+      event.preventDefault();
+      if (event.shiftKey) redo();
+      else undo();
+    };
+    window.addEventListener("keydown", shortcut);
+    return () => window.removeEventListener("keydown", shortcut);
+  });
+
   const editLocation = (
     field: "name" | "timezone" | "growingNotes",
     value: string,
   ) => {
-    setCopy((previous) =>
-      editWorkingCopy(previous, (document) => ({
-        ...document,
-        location: {
-          ...document.location,
-          [field]: field === "timezone" ? value || null : value,
-        },
-      })),
-    );
+    changeDocument({
+      ...copy.document,
+      location: {
+        ...copy.document.location,
+        [field]: field === "timezone" ? value || null : value,
+      },
+    });
   };
 
   const startNew = () => {
@@ -85,6 +124,8 @@ export function App() {
     )
       return;
     setCopy(newWorkingCopy());
+    setPast([]);
+    setFuture([]);
     setReady(true);
     setFileError(null);
   };
@@ -103,6 +144,8 @@ export function App() {
     try {
       const next = openYardText(await file.text(), file.name);
       setCopy(next);
+      setPast([]);
+      setFuture([]);
       setReady(true);
       setFileError(null);
     } catch (error) {
@@ -198,6 +241,22 @@ export function App() {
         </button>
         <button type="button" onClick={() => saveFile(true)} disabled={!ready}>
           Save As
+        </button>
+        <button
+          type="button"
+          className="subtle-button"
+          onClick={undo}
+          disabled={!ready || past.length === 0}
+        >
+          Undo
+        </button>
+        <button
+          type="button"
+          className="subtle-button"
+          onClick={redo}
+          disabled={!ready || future.length === 0}
+        >
+          Redo
         </button>
         <button
           type="button"
@@ -308,23 +367,17 @@ export function App() {
           <YardWorkspace
             key={copy.document.id}
             document={copy.document}
-            onChange={(next) =>
-              setCopy((previous) => editWorkingCopy(previous, () => next))
-            }
+            onChange={changeDocument}
           />
           <ZoneWorkspace
             key={`${copy.document.id}-zones`}
             document={copy.document}
-            onChange={(next) =>
-              setCopy((previous) => editWorkingCopy(previous, () => next))
-            }
+            onChange={changeDocument}
           />
           <ControllerWorkspace
             key={`${copy.document.id}-controller`}
             document={copy.document}
-            onChange={(next) =>
-              setCopy((previous) => editWorkingCopy(previous, () => next))
-            }
+            onChange={changeDocument}
           />
           <section className="needs-checking" aria-label="Needs checking">
             <h2>Needs checking</h2>
@@ -340,9 +393,7 @@ export function App() {
           <CareWorkspace
             key={`${copy.document.id}-care`}
             document={copy.document}
-            onChange={(next) =>
-              setCopy((previous) => editWorkingCopy(previous, () => next))
-            }
+            onChange={changeDocument}
           />
           <div className="property-section">
             <aside className="map-notes" aria-label="Property details">
