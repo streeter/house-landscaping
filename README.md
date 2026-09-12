@@ -1,6 +1,8 @@
 # Yard planner
 
-A local, file-based yard map and care planner. The implementation follows [the project plan](docs/yard-planning-tool.md). The fixed property map is in place; editing and schedule features follow in subsequent PRs.
+A local, file-based yard map and care planner. The implementation follows [the project plan](docs/yard-planning-tool.md). The fixed property map and portable file workflow are in place; plant/zone editing and schedules follow in subsequent PRs.
+
+The app autosaves its working copy in the current browser. On a later visit, choose **Resume browser draft** to continue. **Open file** validates and replaces the working copy; **Save / Download** and **Save As** create a portable `yard.json`. The status line distinguishes browser storage from a file export and identifies edits since the last download. Move the downloaded file to another browser or device and open it there; no account or automatic synchronization is involved.
 
 The map uses feet in a `0 0 40 120` coordinate system. [The structural geometry](data/property-base.json) is its source of truth, with named surfaces and explicit approximate edges. `npm run map:generate` regenerates the committed SVG; the unit test checks the asset against an in-memory render. The source image is only a tracing reference, and its illustrated plants are absent from the map.
 
