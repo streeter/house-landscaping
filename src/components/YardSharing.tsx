@@ -2,23 +2,23 @@ import { useEffect, useState } from "react";
 import type { WorkingCopy } from "../domain/files";
 import {
   createYardLink,
+  replaceYardUrl,
   readYardLink,
   type SharedYard,
 } from "../domain/sharing";
 
 export function IncomingYard({
+  parameter,
+  onDismiss,
   onImport,
 }: {
+  parameter: string;
+  onDismiss: () => void;
   onImport: (name: string, copy: WorkingCopy) => boolean;
 }) {
-  const [parameter] = useState(() =>
-    new URL(window.location.href).searchParams.get("yard"),
-  );
   const [shared, setShared] = useState<SharedYard | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [dismissed, setDismissed] = useState(false);
   useEffect(() => {
-    if (parameter === null) return;
     let cancelled = false;
     void readYardLink(parameter)
       .then((result) => {
@@ -35,10 +35,9 @@ export function IncomingYard({
   const dismiss = () => {
     const url = new URL(window.location.href);
     url.searchParams.delete("yard");
-    window.history.replaceState(null, "", url);
-    setDismissed(true);
+    replaceYardUrl(url);
+    onDismiss();
   };
-  if (parameter === null || dismissed) return null;
   return (
     <section className="resume-panel" aria-label="Shared yard import">
       <h2>Shared yard</h2>
@@ -82,85 +81,68 @@ export function IncomingYard({
   );
 }
 
-export function ShareYard({ copy, name }: { copy: WorkingCopy; name: string }) {
-  const [link, setLink] = useState<{
-    url: string;
-    document: WorkingCopy["document"];
-    name: string;
-  } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const generate = async () => {
-    setBusy(true);
-    setError(null);
-    setLink(null);
-    setCopied(false);
-    try {
-      const url = await createYardLink(copy, name, window.location.href);
-      setLink({ url, document: copy.document, name });
-    } catch (reason) {
-      setError(String(reason));
-    } finally {
-      setBusy(false);
-    }
-  };
-  const stale = link && (link.document !== copy.document || link.name !== name);
+export function YardUrlSync({
+  copy,
+  name,
+  configurationId,
+  enabled,
+  browserSaved,
+}: {
+  copy: WorkingCopy;
+  name: string;
+  configurationId: string;
+  enabled: boolean;
+  browserSaved: boolean;
+}) {
+  const [warning, setWarning] = useState<string | null>(null);
+  const [updating, setUpdating] = useState(true);
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    setUpdating(true);
+    // Coalesce typing and map dragging, and ignore compression from older edits.
+    const timer = window.setTimeout(() => {
+      void createYardLink(copy, name, window.location.href)
+        .then((link) => {
+          if (cancelled) return;
+          const url = new URL(window.location.href);
+          url.searchParams.set("yard", new URL(link).searchParams.get("yard")!);
+          replaceYardUrl(url, browserSaved ? configurationId : undefined);
+          setWarning(null);
+          setUpdating(false);
+        })
+        .catch((reason: unknown) => {
+          if (cancelled) return;
+          const url = new URL(window.location.href);
+          url.searchParams.delete("yard");
+          replaceYardUrl(url);
+          setWarning(
+            reason instanceof Error
+              ? reason.message
+              : "The yard could not be included in the URL. Download it to share it.",
+          );
+          setUpdating(false);
+        });
+    }, 350);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [copy, name, configurationId, enabled, browserSaved]);
+  if (!enabled) return null;
   return (
-    <section className="share-yard" aria-label="Share selected yard">
-      <button type="button" onClick={() => void generate()} disabled={busy}>
-        {busy ? "Preparing link…" : "Create share link"}
-      </button>
-      {error && (
+    <div className="share-yard" aria-live="polite">
+      {warning ? (
         <p role="alert" className="error-message">
-          {error}
+          {warning}
+        </p>
+      ) : (
+        <p>
+          {updating
+            ? "Updating yard in URL…"
+            : "URL updated. Copy the address bar to share this yard, including its location and notes."}
         </p>
       )}
-      {link && (
-        <div className="resume-panel">
-          <p>
-            This link contains a snapshot of the complete yard, including
-            location and notes. Anyone with the link can read it. It does not
-            update when you edit the yard.
-          </p>
-          <p>
-            {link.url.length.toLocaleString("en-US")} characters. Some services
-            may reject long links; use a yard file if needed.
-          </p>
-          {stale && (
-            <p className="stale-note">
-              This link predates your latest changes. Create a new link to share
-              the current yard.
-            </p>
-          )}
-          <label>
-            Share URL
-            <textarea
-              readOnly
-              rows={3}
-              value={link.url}
-              onFocus={(event) => event.target.select()}
-            />
-          </label>
-          <button
-            type="button"
-            onClick={() => {
-              void (async () => {
-                try {
-                  await navigator.clipboard.writeText(link.url);
-                  setCopied(true);
-                } catch {
-                  setError(
-                    "Could not copy automatically. Select and copy the Share URL above.",
-                  );
-                }
-              })();
-            }}
-          >
-            {copied ? "Link copied" : "Copy link"}
-          </button>
-        </div>
-      )}
-    </section>
+    </div>
   );
 }

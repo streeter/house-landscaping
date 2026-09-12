@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import { IncomingYard, ShareYard } from "./components/YardSharing";
+import { IncomingYard, YardUrlSync } from "./components/YardSharing";
 import { propertyBase } from "./property-base";
 import { YardWorkspace } from "./components/YardWorkspace";
 import { ZoneWorkspace } from "./components/ZoneWorkspace";
@@ -33,6 +33,8 @@ import {
   type YardLibrary,
 } from "./domain/library";
 
+import { incomingYardParameter } from "./domain/sharing";
+
 interface AdviceBundle {
   snapshot: WorkingCopy;
   summary: string;
@@ -50,6 +52,13 @@ export function App() {
   const selected = library.entries.find(
     (entry) => entry.id === library.activeId,
   )!;
+  const [incomingParameter, setIncomingParameter] = useState(() =>
+    incomingYardParameter(
+      window.location.href,
+      window.history.state as unknown,
+      selected.id,
+    ),
+  );
   const [startup, setStartup] = useState<DraftRead>(() => readEntry(selected));
   const [copy, setCopy] = useState<WorkingCopy>(
     () => startup.copy ?? newWorkingCopy(),
@@ -370,7 +379,13 @@ export function App() {
         <p className="dimensions">40 × 120 ft · approximately 4,800 sq ft</p>
       </header>
 
-      <IncomingYard onImport={addConfiguration} />
+      {incomingParameter !== null && (
+        <IncomingYard
+          parameter={incomingParameter}
+          onDismiss={() => setIncomingParameter(null)}
+          onImport={addConfiguration}
+        />
+      )}
 
       {!ready && startup.copy && !pendingUpgrade && (
         <section className="resume-panel" aria-label="Resume browser draft">
@@ -517,9 +532,13 @@ export function App() {
             : `Saved/exported to ${copy.filename}`}
         </span>
       </div>
-      {ready && (
-        <ShareYard key={selected.id} copy={copy} name={selected.name} />
-      )}
+      <YardUrlSync
+        copy={copy}
+        name={selected.name}
+        configurationId={selected.id}
+        enabled={ready && incomingParameter === null}
+        browserSaved={storageError === null}
+      />
       {fileError && (
         <p className="error-message" role="alert">
           {fileError}

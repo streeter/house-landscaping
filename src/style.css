@@ -758,10 +758,3 @@ button:disabled {
 .share-yard {
   margin-bottom: 20px;
 }
-.share-yard .resume-panel {
-  margin-top: 12px;
-}
-.share-yard textarea {
-  width: 100%;
-  overflow-wrap: anywhere;
-}
