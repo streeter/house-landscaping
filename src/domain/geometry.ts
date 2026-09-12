@@ -30,6 +30,11 @@ export function pointInPolygon(point: Point, polygon: Point[]): boolean {
   return inside;
 }
 
+const onPolygonEdge = (point: Point, polygon: Point[]): boolean =>
+  polygon.some((a, index) =>
+    onSegment(point, a, polygon[(index + 1) % polygon.length]!),
+  );
+
 export function coveringZoneIds(point: Point, zones: Zone[]): string[] {
   return zones
     .filter((zone) =>
@@ -86,16 +91,59 @@ export function groupCrossingZoneIds(plant: Plant, zones: Zone[]): string[] {
   if (pointInPolygon(center, area)) samples.push(center);
   for (const zone of zones) {
     for (const polygon of zone.polygons) {
+      const polygonCenter: Point = [
+        polygon.reduce((sum, vertex) => sum + vertex[0], 0) / polygon.length,
+        polygon.reduce((sum, vertex) => sum + vertex[1], 0) / polygon.length,
+      ];
+      if (
+        pointInPolygon(polygonCenter, polygon) &&
+        pointInPolygon(polygonCenter, area)
+      )
+        samples.push(polygonCenter);
       for (const vertex of polygon) {
         if (pointInPolygon(vertex, area)) samples.push(vertex);
+      }
+      for (let groupEdge = 0; groupEdge < area.length; groupEdge++) {
+        const a = area[groupEdge]!;
+        const b = area[(groupEdge + 1) % area.length]!;
+        for (let zoneEdge = 0; zoneEdge < polygon.length; zoneEdge++) {
+          const c = polygon[zoneEdge]!;
+          const d = polygon[(zoneEdge + 1) % polygon.length]!;
+          const rx = b[0] - a[0],
+            ry = b[1] - a[1];
+          const sx = d[0] - c[0],
+            sy = d[1] - c[1];
+          const denominator = rx * sy - ry * sx;
+          if (Math.abs(denominator) < epsilon) continue;
+          const qx = c[0] - a[0],
+            qy = c[1] - a[1];
+          const alongGroup = (qx * sy - qy * sx) / denominator;
+          const alongZone = (qx * ry - qy * rx) / denominator;
+          if (
+            alongGroup < 0 ||
+            alongGroup > 1 ||
+            alongZone < 0 ||
+            alongZone > 1
+          )
+            continue;
+          for (const delta of [-0.0001, 0.0001]) {
+            const t = Math.max(0, Math.min(1, alongGroup + delta));
+            samples.push([a[0] + t * rx, a[1] + t * ry]);
+          }
+        }
       }
     }
   }
   return zones
     .filter((zone) => {
-      const memberships = samples.map((sample) =>
-        zone.polygons.some((polygon) => pointInPolygon(sample, polygon)),
-      );
+      const memberships = samples
+        .filter(
+          (sample) =>
+            !zone.polygons.some((polygon) => onPolygonEdge(sample, polygon)),
+        )
+        .map((sample) =>
+          zone.polygons.some((polygon) => pointInPolygon(sample, polygon)),
+        );
       return memberships.some(Boolean) && memberships.some((value) => !value);
     })
     .map((zone) => zone.id);

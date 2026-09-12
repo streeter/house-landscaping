@@ -10,6 +10,8 @@ The file-bar **Undo** and **Redo** controls cover plant, zone, controller, and c
 
 For counted groups, enter the count and draw the area they occupy. The editor warns when that area crosses coverage zones. **Split group** divides the drawn area into two records, retains the notes and original ID on one half, and recalculates each half's coverage. Adjust the resulting outlines when the actual planting layout differs from the automatic split.
 
+A group that still spans different coverage after drawing or editing appears in **Needs checking**. Its export keeps the original station runs but withholds one plant-level watering period until the group is split, so the marker cannot stand in for the whole bed.
+
 In **Irrigation coverage**, assign each yard zone its actual controller station and draw one or more coverage polygons. Drag or numerically edit vertices, add or delete coverage pieces, and click any point to list all covering zones. Overlap areas are hatched on both maps. Zone geometry changes recheck existing overlap notes.
 
 Selecting a plant or clicking a coverage point also shows its predicted elapsed watering periods and the original station events behind them. In an overlap, concurrent station runs remain separate sources even when their elapsed exposure is one period.
