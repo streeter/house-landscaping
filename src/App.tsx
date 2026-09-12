@@ -1,6 +1,7 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { propertyBase } from "./property-base";
 import { YardWorkspace } from "./components/YardWorkspace";
+import { ZoneWorkspace } from "./components/ZoneWorkspace";
 import {
   createFileSnapshot,
   downloadText,
@@ -183,6 +184,13 @@ export function App() {
         <>
           <YardWorkspace
             key={copy.document.id}
+            document={copy.document}
+            onChange={(next) =>
+              setCopy((previous) => editWorkingCopy(previous, () => next))
+            }
+          />
+          <ZoneWorkspace
+            key={`${copy.document.id}-zones`}
             document={copy.document}
             onChange={(next) =>
               setCopy((previous) => editWorkingCopy(previous, () => next))
