@@ -1,5 +1,6 @@
 import { useRef, useState, type PointerEvent } from "react";
 import { coveringZoneIds, revalidateOverlapNotes } from "../domain/geometry";
+import { unionIntervals } from "../domain/timing";
 import type { OverlapNote, YardDocumentV1, Zone } from "../domain/document";
 import type { Point } from "../property-base";
 import { ZoneLayers } from "./ZoneLayers";
@@ -196,6 +197,12 @@ export function ZoneWorkspace({ document, onChange }: Props) {
   const covering = inspectionPoint
     ? coveringZoneIds(inspectionPoint, document.zones)
     : [];
+  const coveringEvents = document.calculated.stationEvents.filter((event) =>
+    covering.includes(event.zoneId),
+  );
+  const elapsedAtPoint = unionIntervals(
+    coveringEvents.map(({ start, end }) => ({ start, end })),
+  );
   const selectedNote =
     document.overlapNotes.find((note) => note.id === selectedNoteId) ?? null;
 
@@ -638,18 +645,54 @@ export function ZoneWorkspace({ document, onChange }: Props) {
           <div className="coverage-inspection">
             <h3>At selected point</h3>
             {inspectionPoint ? (
-              <p>
-                {inspectionPoint[0]}, {inspectionPoint[1]} ft:{" "}
-                {covering.length
-                  ? covering
-                      .map(
-                        (id) =>
-                          document.zones.find((zone) => zone.id === id)?.name ??
-                          id,
-                      )
-                      .join(", ")
-                  : "No mapped automatic coverage"}
-              </p>
+              <>
+                <p>
+                  {inspectionPoint[0]}, {inspectionPoint[1]} ft:{" "}
+                  {covering.length
+                    ? covering
+                        .map(
+                          (id) =>
+                            document.zones.find((zone) => zone.id === id)
+                              ?.name ?? id,
+                        )
+                        .join(", ")
+                    : "No mapped automatic coverage"}
+                </p>
+                <h4>Predicted elapsed watering</h4>
+                <p>
+                  {document.calculated.status}
+                  {document.calculated.reason
+                    ? ` · ${document.calculated.reason}`
+                    : ""}
+                </p>
+                {elapsedAtPoint.length ? (
+                  <ol>
+                    {elapsedAtPoint.map((interval) => (
+                      <li key={interval.start}>
+                        {interval.start} to {interval.end}
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p>
+                    No calculable intervals for this point in the reference
+                    week.
+                  </p>
+                )}
+                <details>
+                  <summary>
+                    Source station events ({coveringEvents.length})
+                  </summary>
+                  <ol>
+                    {coveringEvents.map((event) => (
+                      <li key={event.id}>
+                        {event.zoneId} · program {event.programId}, station{" "}
+                        {event.stationNumber}: {event.start} to {event.end}
+                      </li>
+                    ))}
+                  </ol>
+                </details>
+              </>
             ) : (
               <p>Click the map to inspect all covering zones.</p>
             )}

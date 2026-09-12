@@ -10,6 +10,8 @@ For counted groups, enter the count and draw the area they occupy. The editor wa
 
 In **Irrigation coverage**, assign each yard zone its actual controller station and draw one or more coverage polygons. Drag or numerically edit vertices, add or delete coverage pieces, and click any point to list all covering zones. Overlap areas are hatched on both maps. Zone geometry changes recheck existing overlap notes.
 
+Selecting a plant or clicking a coverage point also shows its predicted elapsed watering periods and the original station events behind them. In an overlap, concurrent station runs remain separate sources even when their elapsed exposure is one period.
+
 Click an overlap to record whether its zones turn on the same hose or independent sources. Notes stay attached to their mapped point and are flagged for checking after geometry changes. A plant’s **Correct coverage** control records observed zone membership and a reason separately from the geometric result; it never implies a shared hose.
 
 In **Rain Dial schedule**, enter the property timezone, reference Monday, controller mode and execution settings, then weekdays, start times, runtimes, and budgets for programs A/B/C. Record whether each setting is confirmed, assumed, or unknown, and distinguish a proposed schedule from settings verified on the controller. Type `none` for a verified absence of sensor/weather adjustment. The timeline shows predicted station runs; unresolved controller behavior is explained rather than assigned exact times. Each file save recalculates station events and plant/overlap elapsed intervals from the current map and settings.
