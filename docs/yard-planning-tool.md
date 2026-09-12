@@ -91,7 +91,7 @@ The timing calculator must account for the documented controller behavior:
 
 These rules come from the [Rain Dial-R user guide, printed pages 18–19 and 27–30](https://cdn2.toro.com/en/-/media/Files/Irritrol/products/controllers/rain-dial-r-series/373-0538V_d.ashx).
 
-For example, Program A starting at 08:00 with stations 1 and 2 each set to 10 minutes produces 08:00–08:10 and 08:10–08:20 when water budget is 100% and station delay is zero. Their shared watering area therefore receives one continuous 20-minute period under the shared-source assumption.
+For example, Program A starting at 08:00 with stations 1 and 2 each set to 10 minutes produces 08:00–08:10 and 08:10–08:20 when water budget is 100% and station delay is zero. An area covered by both therefore has the elapsed watering interval 08:00–08:20; any shared-hose note remains additional context.
 
 Do not infer the installed execution settings from factory defaults. Record Stack/Overlap mode, station delay, water budget, and any relevant rain delay or sensor/weather adjustment as confirmed, assumed, or unknown. Use the property’s user-confirmed timezone and an identified reference week for date-dependent calculations.
 
@@ -112,7 +112,7 @@ Use a stable local URL or hosting origin. A move to another browser, device, or 
 
 ## JSON contract, LLM export, and care records
 
-Define a versioned `YardDocumentV1` contract containing document identity, schema version, modification/export timestamps, a read-only property/base-map snapshot, plants, zone polygons, overlap interpretations, controller settings, schedule records, and text care records. Use stable IDs, explicit references, feet for coordinates, and explicit time units. Unknown values stay unknown.
+Define a versioned `YardDocumentV1` contract containing document identity, schema version, modification/export timestamps, a read-only property/base-map snapshot, plants, zone polygons, optional overlap notes, controller settings, schedule records, and text care records. Use stable IDs, explicit references, feet for coordinates, and explicit time units. Unknown values stay unknown.
 
 Include the structural geometry and labels in the property snapshot, even though they are fixed in the app. The JSON must be understandable without the LLM fetching the app or interpreting an external SVG. On import, check that this read-only snapshot matches the referenced built-in map version.
 
@@ -120,7 +120,7 @@ The same `yard.json` is both the editable handoff file and the structured LLM in
 
 Do not export aggregate fields such as `totalMinutes`, `minutesPerDay`, `weeklyMinutes`, `wateringPeriodCount`, or `daysPerWeek`. Configured per-station runtime remains part of the original controller settings; it is not an aggregate. The app or LLM can calculate elapsed time from interval unions without mistaking simultaneous runs for additional elapsed minutes.
 
-Label the intervals as predicted from controller settings, not observed watering. Include complete/partial/unresolved calculation status and the reason for any missing intervals; an omitted unresolved run must not look like a confirmed lack of watering. Shared-source assumptions accompany the intervals. Regenerate all derived intervals from current source records on save/export.
+Label the intervals as predicted from controller settings, not observed watering. Include complete/partial/unresolved calculation status and the reason for any missing intervals; an omitted unresolved run must not look like a confirmed lack of watering. Any optional source notes accompany the intervals. Regenerate all derived intervals from current source records on save/export.
 
 For a plant in two shared-source zones, the readable output should say, for example:
 
@@ -150,7 +150,7 @@ Verify these scenarios:
 
 - The fixed lot measures 40 × 120 feet, with the west driveway at the bottom and north on the left. Incorrect illustrated plants are absent; zoom and export preserve geometry and scale.
 - A container plant on stairs can belong to multiple zones and retain its supporting surface and notes after file round-trip.
-- Disconnected pieces of one zone do not duplicate watering; intersections between different zones remain visible and retain all memberships. Editing geometry invalidates affected interpretations when necessary.
+- Disconnected pieces of one zone do not duplicate watering; intersections between different zones remain visible and retain all memberships. Editing geometry invalidates affected overlap notes when necessary.
 - Elapsed overlap intervals match all four time examples above for shared, independent, and unknown source arrangements. Original zone events stay separate and retain their provenance. Mixed three-zone overlaps include only zones actually covering the plant/area; optional hose notes never change elapsed-time arithmetic.
 - Program sequencing, Stack/Overlap, repeated starts, station delays, water-budget cycles, and midnight/week transitions produce consistent station and plant timelines. Unverified controller behavior is not presented as exact.
 - A Monday/Wednesday/Friday program assigning a station 10 minutes once per day exports the corresponding dated start/end intervals when confirmed settings introduce no adjustment or additional runs, with no aggregate duration or frequency fields. Tests can calculate the expected duration from those timestamps.
@@ -179,7 +179,7 @@ Use a supported Node.js LTS version pinned in `.nvmrc`, an npm lockfile committe
 
 Enable TypeScript strict mode, checked indexed access, and exact optional-property handling. Validate imported JSON at runtime; a TypeScript assertion is not input validation. Use ESLint flat configuration with type-aware TypeScript rules, React Hooks rules, and JSX accessibility checks. [Type-aware linting documentation](https://typescript-eslint.io/getting-started/typed-linting/)
 
-Use [Vitest](https://vitest.dev/guide/) for domain and component tests. Concentrate on controller sequencing, interval unions and provenance, geometry membership, overlap interpretation, import validation, local storage failures, and deterministic export. Use explicit fixtures, fixed dates/timezones, and independently stated expectations. In particular, test that simultaneous runs retain the same elapsed interval, partial overlap extends its end appropriately, adjacent runs remain continuous, and separated runs remain separate. Check that export JSON contains intervals and source runtimes but no aggregate totals/counts. Verify that regenerating the built-in SVG from the base geometry does not change the committed asset.
+Use [Vitest](https://vitest.dev/guide/) for domain and component tests. Concentrate on controller sequencing, interval unions and provenance, geometry membership, overlap notes, import validation, local storage failures, and deterministic export. Use explicit fixtures, fixed dates/timezones, and independently stated expectations. In particular, test that simultaneous runs retain the same elapsed interval, partial overlap extends its end appropriately, adjacent runs remain continuous, and separated runs remain separate. Check that export JSON contains intervals and source runtimes but no aggregate totals/counts. Render the base-map SVG into memory or a temporary location and compare it with the committed asset to verify reproducibility without rewriting source files.
 
 Use Playwright in Chromium and WebKit for the core browser workflow: open a fixture, edit a plant and zone, enter program settings, inspect overlap intervals, reload the local draft, download JSON, and reopen it in a fresh browser context. Include a phone-sized touch interaction for plant placement, a plant on stairs, and malformed-file recovery. Exercise standard file upload/download so tests do not depend on optional native file picker APIs. Browser tests start their own preview server and do not require Vercel or other external services. [Playwright CI documentation](https://playwright.dev/docs/ci-intro)
 
