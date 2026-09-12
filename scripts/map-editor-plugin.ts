@@ -12,6 +12,7 @@ const dataFile = new URL("../data/property-base.json", import.meta.url);
 const svgFile = new URL("../public/property-base.svg", import.meta.url);
 const kinds = new Set([
   "ground",
+  "planter",
   "path",
   "patio",
   "driveway",

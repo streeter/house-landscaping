@@ -2,7 +2,14 @@ import rawPropertyBase from "../data/property-base.json" with { type: "json" };
 
 export type Point = [number, number];
 export type SurfaceKind =
-  "ground" | "path" | "patio" | "driveway" | "porch" | "stairs" | "building";
+  | "ground"
+  | "planter"
+  | "path"
+  | "patio"
+  | "driveway"
+  | "porch"
+  | "stairs"
+  | "building";
 
 export interface PropertySurface {
   id: string;
@@ -32,6 +39,7 @@ export const propertyBase = rawPropertyBase as PropertyBase;
 
 const colors: Record<SurfaceKind, string> = {
   ground: "#d5e5b7",
+  planter: "#b28457",
   path: "#d9dcd5",
   patio: "#d8d6cd",
   driveway: "#d4d8d7",
@@ -56,9 +64,18 @@ export function renderPropertySvg(base: PropertyBase = propertyBase): string {
   const surfaces = base.surfaces
     .map((surface) => {
       const points = surface.points.map(([x, y]) => `${x},${y}`).join(" ");
-      const stroke = surface.kind === "building" ? "#5c4a38" : "#8e9989";
+      const stroke =
+        surface.kind === "building" || surface.kind === "planter"
+          ? "#5c4a38"
+          : "#8e9989";
       const dash = surface.approximate ? ' stroke-dasharray="0.5 0.35"' : "";
-      return `<polygon id="${escapeXml(surface.id)}" data-kind="${surface.kind}" points="${points}" fill="${colors[surface.kind]}" stroke="${stroke}" stroke-width="${surface.kind === "building" ? 0.4 : 0.16}"${dash}><title>${escapeXml(surface.label)}${surface.approximate ? " (approximate)" : ""}</title></polygon>`;
+      const strokeWidth =
+        surface.kind === "building"
+          ? 0.4
+          : surface.kind === "planter"
+            ? 0.3
+            : 0.16;
+      return `<polygon id="${escapeXml(surface.id)}" data-kind="${surface.kind}" points="${points}" fill="${colors[surface.kind]}" stroke="${stroke}" stroke-width="${strokeWidth}"${dash}><title>${escapeXml(surface.label)}${surface.approximate ? " (approximate)" : ""}</title></polygon>`;
     })
     .join("\n  ");
 

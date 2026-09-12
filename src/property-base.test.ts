@@ -28,4 +28,23 @@ describe("fixed property map", () => {
     expect(asset).toBe(renderPropertySvg());
     expect(asset).not.toContain("vegetation");
   });
+
+  test("renders raised planters as a distinct structural surface", () => {
+    const base = structuredClone(propertyBase);
+    base.surfaces.push({
+      id: "raised-planter",
+      label: "Raised planter",
+      kind: "planter",
+      points: [
+        [20, 6],
+        [25, 6],
+        [25, 10],
+        [20, 10],
+      ],
+      approximate: true,
+    });
+    expect(renderPropertySvg(base)).toContain(
+      'id="raised-planter" data-kind="planter"',
+    );
+  });
 });

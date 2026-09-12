@@ -27,4 +27,22 @@ describe("local map save", () => {
       "inside the lot",
     );
   });
+
+  test("accepts a raised planter surface", () => {
+    const input = structuredClone(propertyBase);
+    input.surfaces.push({
+      id: "raised-planter",
+      label: "Raised planter",
+      kind: "planter",
+      points: [
+        [20, 6],
+        [25, 6],
+        [25, 10],
+        [20, 10],
+      ],
+      approximate: true,
+    });
+    const saved = validateMapEdit(input, propertyBase);
+    expect(saved.surfaces.at(-1)?.kind).toBe("planter");
+  });
 });

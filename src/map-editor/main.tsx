@@ -10,6 +10,7 @@ import "./style.css";
 
 const kinds: SurfaceKind[] = [
   "ground",
+  "planter",
   "path",
   "patio",
   "driveway",
@@ -19,6 +20,7 @@ const kinds: SurfaceKind[] = [
 ];
 const colors: Record<SurfaceKind, string> = {
   ground: "#d5e5b7",
+  planter: "#b28457",
   path: "#d9dcd5",
   patio: "#d8d6cd",
   driveway: "#d4d8d7",
