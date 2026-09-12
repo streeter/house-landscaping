@@ -1,5 +1,6 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { propertyBase } from "./property-base";
+import { YardWorkspace } from "./components/YardWorkspace";
 import {
   createFileSnapshot,
   downloadText,
@@ -179,71 +180,69 @@ export function App() {
       )}
 
       {ready && (
-        <div className="map-layout">
-          <figure className="map-card">
-            <img
-              className="base-map"
-              src="/property-base.svg"
-              alt="Property plan, with backyard at the top, driveway at the bottom, and north to the left"
-            />
-            <figcaption>
-              Approximate structural trace. Dashed edges indicate inferred
-              positions.
-            </figcaption>
-          </figure>
-          <aside className="map-notes" aria-label="Property details">
-            <h2>Property details</h2>
-            <label>
-              Location
-              <input
-                value={copy.document.location.name}
-                onChange={(event) => editLocation("name", event.target.value)}
-                placeholder="City or address description"
-              />
-            </label>
-            <label>
-              Timezone
-              <input
-                value={copy.document.location.timezone ?? ""}
-                onChange={(event) =>
-                  editLocation("timezone", event.target.value)
-                }
-                placeholder="America/Los_Angeles"
-              />
-            </label>
-            <label>
-              Growing conditions
-              <textarea
-                value={copy.document.location.growingNotes}
-                onChange={(event) =>
-                  editLocation("growingNotes", event.target.value)
-                }
-                rows={4}
-                placeholder="Sun, soil, slope, and seasonal notes"
-              />
-            </label>
-            <h2>Map orientation</h2>
-            <dl>
-              <div>
-                <dt>Top</dt>
-                <dd>East · backyard</dd>
-              </div>
-              <div>
-                <dt>Bottom</dt>
-                <dd>West · driveway</dd>
-              </div>
-              <div>
-                <dt>Left</dt>
-                <dd>North</dd>
-              </div>
-              <div>
-                <dt>Right</dt>
-                <dd>South</dd>
-              </div>
-            </dl>
-            <p>{propertyBase.tracing.note}</p>
-          </aside>
-        </div>
+        <>
+          <YardWorkspace
+            key={copy.document.id}
+            document={copy.document}
+            onChange={(next) =>
+              setCopy((previous) => editWorkingCopy(previous, () => next))
+            }
+          />
+          <div className="property-section">
+            <aside className="map-notes" aria-label="Property details">
+              <h2>Property details</h2>
+              <label>
+                Location
+                <input
+                  value={copy.document.location.name}
+                  onChange={(event) => editLocation("name", event.target.value)}
+                  placeholder="City or address description"
+                />
+              </label>
+              <label>
+                Timezone
+                <input
+                  value={copy.document.location.timezone ?? ""}
+                  onChange={(event) =>
+                    editLocation("timezone", event.target.value)
+                  }
+                  placeholder="America/Los_Angeles"
+                />
+              </label>
+              <label>
+                Growing conditions
+                <textarea
+                  value={copy.document.location.growingNotes}
+                  onChange={(event) =>
+                    editLocation("growingNotes", event.target.value)
+                  }
+                  rows={4}
+                  placeholder="Sun, soil, slope, and seasonal notes"
+                />
+              </label>
+              <h2>Map orientation</h2>
+              <dl>
+                <div>
+                  <dt>Top</dt>
+                  <dd>East · backyard</dd>
+                </div>
+                <div>
+                  <dt>Bottom</dt>
+                  <dd>West · driveway</dd>
+                </div>
+                <div>
+                  <dt>Left</dt>
+                  <dd>North</dd>
+                </div>
+                <div>
+                  <dt>Right</dt>
+                  <dd>South</dd>
+                </div>
+              </dl>
+              <p>{propertyBase.tracing.note}</p>
+            </aside>
+          </div>
+        </>
       )}
     </main>
   );
