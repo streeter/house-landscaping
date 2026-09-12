@@ -1,6 +1,7 @@
 import {
   newYardDocument,
   parseYardDocument,
+  upgradeAdditiveMap,
   type YardDocumentV1,
 } from "./document";
 import { calculateYardSchedule } from "./timing";
@@ -13,17 +14,28 @@ export interface WorkingCopy {
   filename: string;
 }
 
-interface DraftRead {
+export interface MapUpgradePreview {
+  copy: WorkingCopy;
+  previousVersion: number;
+  addedSurfaceLabels: string[];
+  plantsToReview: string[];
+}
+
+export interface DraftRead {
   copy: WorkingCopy | null;
+  upgrade: MapUpgradePreview | null;
+  unreadableRaw: string | null;
   error: string | null;
 }
 
 type DraftStore = Pick<Storage, "getItem" | "setItem">;
 
 export function loadBrowserDraft(store: DraftStore): DraftRead {
+  let raw: string | null = null;
   try {
-    const raw = store.getItem(DRAFT_KEY);
-    if (raw === null) return { copy: null, error: null };
+    raw = store.getItem(DRAFT_KEY);
+    if (raw === null)
+      return { copy: null, upgrade: null, unreadableRaw: null, error: null };
     const input: unknown = JSON.parse(raw);
     if (typeof input !== "object" || input === null || !("document" in input))
       throw new Error("Invalid browser draft");
@@ -33,20 +45,49 @@ export function loadBrowserDraft(store: DraftStore): DraftRead {
       typeof envelope.filename !== "string"
     )
       throw new Error("Invalid browser draft metadata");
-    return {
-      copy: {
-        document: withCalculation(parseYardDocument(envelope.document)),
-        dirtySinceFile: envelope.dirtySinceFile,
-        filename: envelope.filename,
-      },
-      error: null,
-    };
+    try {
+      return {
+        copy: {
+          document: withCalculation(parseYardDocument(envelope.document)),
+          dirtySinceFile: envelope.dirtySinceFile,
+          filename: envelope.filename,
+        },
+        upgrade: null,
+        unreadableRaw: null,
+        error: null,
+      };
+    } catch (error) {
+      const upgrade = prepareMapUpgrade(envelope.document, envelope.filename);
+      if (upgrade)
+        return { copy: null, upgrade, unreadableRaw: null, error: null };
+      throw error;
+    }
   } catch (error) {
     return {
       copy: null,
+      upgrade: null,
+      unreadableRaw: raw,
       error: `Browser draft unavailable: ${message(error)}`,
     };
   }
+}
+
+export function prepareMapUpgrade(
+  input: unknown,
+  filename = "yard.json",
+): MapUpgradePreview | null {
+  const upgrade = upgradeAdditiveMap(input);
+  if (!upgrade) return null;
+  return {
+    copy: {
+      document: withCalculation(upgrade.document),
+      dirtySinceFile: true,
+      filename,
+    },
+    previousVersion: upgrade.previousVersion,
+    addedSurfaceLabels: upgrade.addedSurfaces.map((surface) => surface.label),
+    plantsToReview: upgrade.plantsToReview,
+  };
 }
 
 export function saveBrowserDraft(

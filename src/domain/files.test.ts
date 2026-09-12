@@ -59,4 +59,37 @@ describe("browser draft and portable file", () => {
     ).toThrow();
     expect(copy.document.schemaVersion).toBe(1);
   });
+
+  test("preserves an older browser draft until its additive map update is accepted", () => {
+    const copy = newWorkingCopy();
+    copy.document.property.version -= 1;
+    copy.document.property.surfaces.pop();
+    const raw = JSON.stringify(copy);
+    const memory = new Map([["yard-planner-draft-v1", raw]]);
+    const store = {
+      getItem: (key: string) => memory.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        memory.set(key, value);
+      },
+    };
+    const loaded = loadBrowserDraft(store);
+    expect(loaded.copy).toBeNull();
+    expect(loaded.upgrade?.copy.document.id).toBe(copy.document.id);
+    expect(loaded.upgrade?.copy.dirtySinceFile).toBe(true);
+    expect(memory.get("yard-planner-draft-v1")).toBe(raw);
+  });
+
+  test("keeps an incompatible browser draft available for backup", () => {
+    const raw = '{"document":{"property":{"version":999}}}';
+    const loaded = loadBrowserDraft({
+      getItem: () => raw,
+      setItem: () => {
+        throw new Error("must not overwrite");
+      },
+    });
+    expect(loaded.copy).toBeNull();
+    expect(loaded.upgrade).toBeNull();
+    expect(loaded.unreadableRaw).toBe(raw);
+    expect(loaded.error).toContain("Browser draft unavailable");
+  });
 });
