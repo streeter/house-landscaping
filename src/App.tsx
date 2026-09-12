@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { propertyBase } from "./property-base";
 import { YardWorkspace } from "./components/YardWorkspace";
 import { ZoneWorkspace } from "./components/ZoneWorkspace";
@@ -15,16 +15,22 @@ import {
   downloadBlob,
   downloadText,
   editWorkingCopy,
-  loadBrowserDraft,
   newWorkingCopy,
   openYardText,
   prepareMapUpgrade,
-  saveBrowserDraft,
   serializeYardFile,
   type DraftRead,
   type MapUpgradePreview,
   type WorkingCopy,
 } from "./domain/files";
+
+import {
+  loadLibrary,
+  makeEntry,
+  readEntry,
+  saveLibrary,
+  type YardLibrary,
+} from "./domain/library";
 
 interface AdviceBundle {
   snapshot: WorkingCopy;
@@ -33,39 +39,30 @@ interface AdviceBundle {
   mapPng: Blob;
 }
 
-function initialDraft(): DraftRead {
-  try {
-    return loadBrowserDraft(window.localStorage);
-  } catch (error) {
-    return {
-      copy: null,
-      upgrade: null,
-      unreadableRaw: null,
-      error: `Browser draft unavailable: ${String(error)}`,
-    };
-  }
-}
-
-function saveDraft(copy: WorkingCopy): string | null {
-  try {
-    return saveBrowserDraft(window.localStorage, copy);
-  } catch (error) {
-    return `Browser draft could not be saved: ${String(error)}`;
-  }
-}
-
 export function App() {
-  const [startup] = useState(initialDraft);
+  const session = useRef<ReturnType<typeof loadLibrary> | null>(null);
+  session.current ??= loadLibrary({
+    getItem: (key) => window.localStorage.getItem(key),
+    setItem: (key, value) => window.localStorage.setItem(key, value),
+  });
+  const [library, setLibrary] = useState(session.current.library);
+  const selected = library.entries.find(
+    (entry) => entry.id === library.activeId,
+  )!;
+  const [startup, setStartup] = useState<DraftRead>(() => readEntry(selected));
   const [copy, setCopy] = useState<WorkingCopy>(
     () => startup.copy ?? newWorkingCopy(),
   );
+  const currentSelection = useRef({ id: selected.id, copy });
+  currentSelection.current = { id: selected.id, copy };
   const [ready, setReady] = useState(
-    startup.copy === null &&
-      startup.upgrade === null &&
-      startup.unreadableRaw === null,
+    session.current.fresh ||
+      (startup.copy === null &&
+        startup.upgrade === null &&
+        startup.unreadableRaw === null),
   );
   const [storageError, setStorageError] = useState<string | null>(
-    startup.error,
+    session.current.error ?? startup.error,
   );
   const [fileError, setFileError] = useState<string | null>(null);
   const [pendingUpgrade, setPendingUpgrade] =
@@ -77,9 +74,94 @@ export function App() {
   const [future, setFuture] = useState<WorkingCopy["document"][]>([]);
   const activeUpgrade = pendingUpgrade ?? (!ready ? startup.upgrade : null);
 
+  const commitLibrary = (next: YardLibrary): boolean => {
+    try {
+      saveLibrary(window.localStorage, session.current!, next);
+      setLibrary(next);
+      setStorageError(null);
+      return true;
+    } catch (error) {
+      setStorageError(
+        `Browser configurations could not be saved: ${String(error)}`,
+      );
+      return false;
+    }
+  };
+
+  const persistCurrent = (): boolean => {
+    if (!ready) return true;
+    const current = session.current!.library;
+    return commitLibrary({
+      ...current,
+      entries: current.entries.map((entry) =>
+        entry.id === selected.id
+          ? { ...entry, raw: JSON.stringify(copy) }
+          : entry,
+      ),
+    });
+  };
+
   useEffect(() => {
-    if (ready) setStorageError(saveDraft(copy));
-  }, [copy, ready]);
+    if (ready) {
+      const current = session.current!.library;
+      try {
+        const next = {
+          ...current,
+          entries: current.entries.map((entry) =>
+            entry.id === library.activeId
+              ? { ...entry, raw: JSON.stringify(copy) }
+              : entry,
+          ),
+        };
+        saveLibrary(window.localStorage, session.current!, next);
+        setLibrary(next);
+        setStorageError(null);
+      } catch (error) {
+        setStorageError(
+          `Browser configurations could not be saved: ${String(error)}`,
+        );
+      }
+    }
+  }, [copy, ready, library.activeId]);
+
+  const clearWorkspace = () => {
+    setPast([]);
+    setFuture([]);
+    setAdviceBundle(null);
+    setPendingUpgrade(null);
+    setUpgradeNotice(null);
+    setFileError(null);
+  };
+
+  const selectConfiguration = (id: string) => {
+    if (!persistCurrent()) return;
+    const current = session.current!.library;
+    const entry = current.entries.find((item) => item.id === id)!;
+    if (!commitLibrary({ ...current, activeId: id })) return;
+    const draft = readEntry(entry);
+    setStartup(draft);
+    setCopy(draft.copy ?? newWorkingCopy());
+    setReady(draft.copy !== null);
+    setStorageError(draft.error);
+    clearWorkspace();
+  };
+
+  const renameConfiguration = () => {
+    const name = window.prompt("Configuration name", selected.name)?.trim();
+    if (!name) return;
+    if (name.length > 100) {
+      setFileError("Use a configuration name of 100 characters or fewer.");
+      return;
+    }
+    if (!persistCurrent()) return;
+    const current = session.current!.library;
+    commitLibrary({
+      ...current,
+      entries: current.entries.map((entry) =>
+        entry.id === selected.id ? { ...entry, name } : entry,
+      ),
+    });
+  };
 
   const changeDocument = (next: WorkingCopy["document"]) => {
     setPast((items) => [...items, copy.document].slice(-50));
@@ -134,22 +216,39 @@ export function App() {
   };
 
   const startNew = () => {
+    const name = window.prompt("New configuration name", "New yard")?.trim();
+    if (!name) return;
+    if (name.length > 100) {
+      setFileError("Use a configuration name of 100 characters or fewer.");
+      return;
+    }
+    if (!persistCurrent()) return;
+    const next = newWorkingCopy();
+    next.filename = `${name.replace(/[\\/]/g, "")}.json`;
+    const entry = makeEntry(name, next);
+    const current = session.current!.library;
     if (
-      ((!ready && (startup.upgrade || startup.unreadableRaw)) ||
-        copy.dirtySinceFile) &&
-      !window.confirm("Discard the current yard and any unsaved edits?")
+      !commitLibrary({
+        ...current,
+        activeId: entry.id,
+        entries: [...current.entries, entry],
+      })
     )
       return;
-    setCopy(newWorkingCopy());
-    setPast([]);
-    setFuture([]);
+    setCopy(next);
     setReady(true);
-    setPendingUpgrade(null);
-    setUpgradeNotice(null);
-    setFileError(null);
+    clearWorkspace();
   };
 
   const acceptUpgrade = (upgrade: MapUpgradePreview) => {
+    if (
+      pendingUpgrade &&
+      !window.confirm(
+        `Replace configuration “${selected.name}” with the updated yard?`,
+      )
+    )
+      return;
+    setAdviceBundle(null);
     setCopy(upgrade.copy);
     setPast([]);
     setFuture([]);
@@ -167,16 +266,17 @@ export function App() {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-    if (
-      ready &&
-      copy.dirtySinceFile &&
-      !window.confirm(
-        "Replace the working yard with this file? Unsaved edits will be lost.",
-      )
-    )
-      return;
     try {
       const text = await file.text();
+      if (
+        currentSelection.current.id !== selected.id ||
+        currentSelection.current.copy !== copy
+      ) {
+        setFileError(
+          "The selected yard changed while the file was loading. Upload it again to replace this configuration.",
+        );
+        return;
+      }
       let next: WorkingCopy;
       try {
         next = openYardText(text, file.name);
@@ -190,6 +290,13 @@ export function App() {
         setFileError(null);
         return;
       }
+      if (
+        !window.confirm(
+          `Replace configuration “${selected.name}” with ${file.name}? Its current contents will be replaced.`,
+        )
+      )
+        return;
+      setAdviceBundle(null);
       setCopy(next);
       setPast([]);
       setFuture([]);
@@ -261,8 +368,8 @@ export function App() {
         <section className="resume-panel" aria-label="Resume browser draft">
           <h2>Continue your yard?</h2>
           <p>
-            A working copy was found in this browser. Resume it or open a saved
-            file.
+            Resume “{selected.name}”, choose another configuration, or create a
+            new yard.
           </p>
           <button type="button" onClick={() => setReady(true)}>
             Resume browser draft
@@ -273,14 +380,13 @@ export function App() {
         </section>
       )}
 
-      {!ready && startup.unreadableRaw && !pendingUpgrade && (
+      {!ready && startup.unreadableRaw !== null && !pendingUpgrade && (
         <section className="resume-panel" aria-label="Unopened browser draft">
           <h2>Browser draft needs attention</h2>
           <p>
             This browser has a yard draft that cannot be opened with the current
             map. Download a backup before starting a new yard, or open a saved
-            file. The draft stays in this browser until you choose a
-            replacement.
+            file. Creating a new configuration keeps this draft available.
           </p>
           <button
             type="button"
@@ -299,9 +405,52 @@ export function App() {
         </section>
       )}
 
+      {session.current.backup && (
+        <section className="resume-panel" aria-label="Configuration recovery">
+          <p>
+            The saved configuration library could not be read. Download a backup
+            to recover it. Your in-memory yard can still be downloaded.
+          </p>
+          <button
+            type="button"
+            onClick={() =>
+              downloadText(
+                session.current!.backup!,
+                "yard-configurations-backup.json",
+              )
+            }
+          >
+            Download configurations backup
+          </button>
+        </section>
+      )}
+      <div className="file-bar" aria-label="Yard configurations">
+        <label>
+          Configuration{" "}
+          <select
+            aria-label="Yard configuration"
+            value={selected.id}
+            onChange={(event) => selectConfiguration(event.target.value)}
+          >
+            {library.entries.map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {entry.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          className="subtle-button"
+          onClick={renameConfiguration}
+        >
+          Rename
+        </button>
+        <span>Uploads replace the selected configuration.</span>
+      </div>
       <div className="file-bar" aria-label="Yard file actions">
         <label className="file-button">
-          Open file
+          Upload / Replace
           <input
             type="file"
             accept=".json,application/json"
@@ -471,17 +620,17 @@ export function App() {
       {ready && (
         <>
           <YardWorkspace
-            key={copy.document.id}
+            key={`${selected.id}-${copy.document.id}`}
             document={copy.document}
             onChange={changeDocument}
           />
           <ZoneWorkspace
-            key={`${copy.document.id}-zones`}
+            key={`${selected.id}-${copy.document.id}-zones`}
             document={copy.document}
             onChange={changeDocument}
           />
           <ControllerWorkspace
-            key={`${copy.document.id}-controller`}
+            key={`${selected.id}-${copy.document.id}-controller`}
             document={copy.document}
             onChange={changeDocument}
           />
@@ -497,7 +646,7 @@ export function App() {
             )}
           </section>
           <CareWorkspace
-            key={`${copy.document.id}-care`}
+            key={`${selected.id}-${copy.document.id}-care`}
             document={copy.document}
             onChange={changeDocument}
           />

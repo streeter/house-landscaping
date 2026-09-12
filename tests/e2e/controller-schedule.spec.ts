@@ -1,3 +1,4 @@
+import { readDraftRaw } from "./drafts";
 import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 
@@ -24,19 +25,17 @@ test("controller edits regenerate the predicted file timeline", async ({
   await program.getByLabel("Basic water budget (%)").fill("100");
   const zone = page.getByRole("region", { name: "Irrigation zone editor" });
   await zone.getByLabel("Controller station").selectOption("1");
-  const draft = await page.evaluate(
-    () =>
-      JSON.parse(localStorage.getItem("yard-planner-draft-v1")!) as {
-        document: {
-          controller: {
-            settings: {
-              rainDelayDays: { value: number | null };
-              sensorAdjustment: { value: string | null };
-            };
+  const draft = await (async () =>
+    JSON.parse((await readDraftRaw(page))!) as {
+      document: {
+        controller: {
+          settings: {
+            rainDelayDays: { value: number | null };
+            sensorAdjustment: { value: string | null };
           };
         };
-      },
-  );
+      };
+    })();
   expect(draft.document.controller.settings.rainDelayDays.value).toBe(0);
   expect(draft.document.controller.settings.sensorAdjustment.value).toBe(
     "none",

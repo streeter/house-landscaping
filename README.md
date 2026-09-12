@@ -2,7 +2,11 @@
 
 A local, file-based yard map and care planner. The implementation follows [the project plan](docs/yard-planning-tool.md): edit plants and irrigation coverage, model Rain Dial schedules, inspect predicted watering, and export a portable yard file and advice bundle.
 
-The app autosaves its working copy in the current browser. On a later visit, choose **Resume browser draft** to continue. **Open file** validates and replaces the working copy; **Save / Download** and **Save As** create a portable `yard.json`. The status line distinguishes browser storage from a file export and identifies edits since the last download. Move the downloaded file to another browser or device and open it there; no account or automatic synchronization is involved.
+The app autosaves each named configuration in the current browser. Use the **Configuration** picker to switch yards, **Rename** to name one, and **New** to create another without discarding the selected yard. On a later visit, choose **Resume browser draft**. Existing single browser drafts are carried into the configuration library; the original storage entry is retained as a backup.
+
+**Upload / Replace** validates a portable yard file and asks before replacing the selected configuration. Other configurations stay intact, even if they contain the same yard document ID. **Save / Download** exports the selected yard; **Save As** chooses its download filename. Configuration names belong to this browser and do not change the portable `yard.json` format. The status line distinguishes browser storage from file downloads and identifies edits since the last download. No account or automatic synchronization is involved. If storage fills up or another tab changes the library, download your in-memory edits before reloading; switching configurations is blocked until they can be saved.
+
+Unopened yards with an incompatible map are retained for backup. Additive map upgrades still require explicit acceptance. Creating a new configuration keeps the old one available.
 
 Use **Place plant** and tap or click the yard map to add a marker. Select an inventory entry to locate it, drag a marker to move it, and edit its plant, growing-setting, and surface details in the panel. The map has zoom, pan, layer switches, and undo/redo. Retiring a plant keeps its record for history; planned plants appear separately from existing ones.
 
