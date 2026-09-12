@@ -42,7 +42,7 @@ Use computers for precise polygon editing. Phones support viewing coverage, plac
 | Plant or group | Stable ID, label, species or unknown identity, position, optional group area and count, status, establishment, size, sun, soil, and notes |
 | Growing setting | Ground, container, or planting pocket; supporting surface ID; optional container dimensions and drainage notes |
 | Zone | Stable ID, name, color, controller station number, and one or more coverage polygons |
-| Overlap interpretation | Connected overlap area, covering zones, which zones share a watering source there, and whether that interpretation is confirmed or unknown |
+| Overlap context | Covering zones and optional notes identifying a shared hose or independent watering sources in that area |
 | Controller schedule | Model, execution settings, programs A/B/C, weekdays, start times, and station runtimes |
 | Care records | Dated observations, simple maintenance tasks, and saved proposed/programmed schedules |
 
@@ -52,7 +52,7 @@ Plant anchors must lie inside the property boundary. Plants are allowed on stair
 
 Preserve every zone covering a plant’s anchor location, including overlaps and boundary points. Allow a documented manual coverage correction, and distinguish it from the geometric result in the export. Recalculate membership after moving plants or editing zones.
 
-A manual coverage correction does not establish that the newly assigned zones share a hose. If the corrected zone set has no applicable overlap interpretation, retain its separate zone intervals and mark the source relationship unknown. Do not invent a shared-source relationship or require a hand-watering model to resolve the correction.
+A manual coverage correction does not establish that the newly assigned zones share a hose. Retain the zone intervals and leave any unrecorded source relationship unknown. This does not block assignment or the calculation of elapsed watering intervals, which depends only on effective zone membership and timing.
 
 Counted plant groups should share species, growing setting, and watering coverage. Use separate records for mixed beds or groups crossing different coverage areas; identify such crossings instead of assigning the entire group from its centroid. Support splitting a group while retaining its notes. Retire removed/dead plants under their stable IDs, preserve observations, and exclude them from current watering summaries. Planned plants remain separate from the existing inventory.
 
@@ -62,20 +62,20 @@ Model irrigation by area, with approximately uniform watering within each zone. 
 
 Overlapping zone polygons are valid. Use translucent fills, distinct labeled borders, and hatching on intersections. Selecting an overlap lists all covering zones and shows its combined expected schedule; do not rely on blended colors alone.
 
-For each connected overlap area, record whether the covering zones activate the **same watering source**, **independent sources**, or an **unknown arrangement**. The user has identified at least two places where different zones activate the same hose. These can be marked as shared sources without drawing the hose or its drippers. Different intersections may have different interpretations. Revalidate affected overlap interpretations after polygon changes and mark unresolved ones for review.
+The user has identified at least two places where different zones activate the same hose. Allow an optional note on an overlap identifying a shared hose or independent sources, without drawing the hose or its drippers. Different intersections may have different arrangements. Associate notes with their actual areas and covering zones; revalidate affected notes after polygon changes.
 
-Here, a shared-source interpretation simply means “these zones turn on the same hose in this area.” It determines how to interpret simultaneous operation. It is separate from the geometric question of which polygons cover a plant, and it does not identify individual drippers.
+Here, a shared-source note simply means “these zones turn on the same hose in this area.” It adds physical context, but is not a required rule for plant assignment or interval calculation. Unique elapsed watering time comes from the union of covering-zone intervals whether the sources are shared, independent, or unknown. No elapsed-time calculation implies a particular water volume or flow rate.
 
-Combine overlapping or directly adjoining time intervals within each shared source. For illustration, if these are the actual station running times on Monday:
+Combine overlapping or directly adjoining time intervals across a plant’s covering zones to describe when it is exposed to scheduled watering. Preserve the original per-zone events separately. For illustration, if these are the actual station running times on Monday:
 
-| Zone A | Zone B | Combined shared-source intervals |
+| Zone A | Zone B | Elapsed watering intervals |
 |---|---|---|
 | 08:00–08:10 | 08:00–08:10 | 08:00–08:10 |
 | 08:00–08:10 | 08:05–08:15 | 08:00–08:15 |
 | 08:00–08:10 | 08:10–08:20 | 08:00–08:20 |
 | 08:00–08:10 | 09:00–09:10 | 08:00–08:10 and 09:00–09:10 |
 
-For independent sources, retain separate source timelines and identify simultaneous delivery; do not treat their combined operation as a single equal-flow source. If a region has both shared and independent sources, combine intervals only within each shared group. Unknown source relationships remain explicit and do not produce an asserted combined water amount.
+Retain separate zone timelines and their identifiers so concurrent operation stays visible even when the elapsed intervals merge. An elapsed interval spanning two independent sources must not be described as one physical hose or an equal-flow source. Shared-hose notes are optional context for interpreting the original events; unknown relationships do not prevent time-based exports and never produce an asserted combined water amount.
 
 ## Rain Dial RD-900-R schedule model
 
@@ -97,7 +97,7 @@ Do not infer the installed execution settings from factory defaults. Record Stac
 
 Where behavior is not established—such as equal-time queue priority or the same station requested by concurrent programs—flag the affected timing as unresolved until verified against the controller. Preserve the original settings and explain the ambiguity instead of inventing a precise timeline. The calculator describes **expected scheduled operation**, not a history of observed watering; manual operation, rain interruptions, or faults are not inferred.
 
-Use dated start/end timestamps with explicit UTC offsets and the property timezone. Intervals are start-inclusive and end-exclusive. Preserve events crossing midnight or Sunday/Monday instead of assigning them wholly to their starting day; a daily view may clip the interval for display. Compute station events first, then intersect their coverage with plants and overlap areas, then combine intervals according to the source relationships. Keep this calculation as a pure, testable function shared by the UI and exports.
+Use dated start/end timestamps with explicit UTC offsets and the property timezone. Intervals are start-inclusive and end-exclusive. Preserve events crossing midnight or Sunday/Monday instead of assigning them wholly to their starting day; a daily view may clip the interval for display. Compute station events first, then intersect their coverage with plants and overlap areas, then take the union of each plant/area’s intervals for elapsed watering. Preserve all original source events and any optional shared-hose notes. Keep this calculation as a pure, testable function shared by the UI and exports.
 
 ## Local storage and shared file workflow
 
@@ -116,7 +116,7 @@ Define a versioned `YardDocumentV1` contract containing document identity, schem
 
 Include the structural geometry and labels in the property snapshot, even though they are fixed in the app. The JSON must be understandable without the LLM fetching the app or interpreting an external SVG. On import, check that this read-only snapshot matches the referenced built-in map version.
 
-The same `yard.json` is both the editable handoff file and the structured LLM input. Its calculated section contains expected station runs and plant/area watering intervals, with source zone/program IDs, source grouping, and dated start/end timestamps. Preserve the original station events alongside any combined shared-source intervals so simultaneous or sequential operation remains inspectable.
+The same `yard.json` is both the editable handoff file and the structured LLM input. Its calculated section contains expected station runs and plant/area elapsed watering intervals, with source zone/program IDs and dated start/end timestamps. Preserve the original station events alongside their combined elapsed intervals so simultaneous or sequential operation remains inspectable. Include optional source notes as context, not as a prerequisite for interval calculation.
 
 Do not export aggregate fields such as `totalMinutes`, `minutesPerDay`, `weeklyMinutes`, `wateringPeriodCount`, or `daysPerWeek`. Configured per-station runtime remains part of the original controller settings; it is not an aggregate. The app or LLM can calculate elapsed time from interval unions without mistaking simultaneous runs for additional elapsed minutes.
 
@@ -124,7 +124,7 @@ Label the intervals as predicted from controller settings, not observed watering
 
 For a plant in two shared-source zones, the readable output should say, for example:
 
-> This plant is covered by zones 2 and 5, which activate the same watering source here. Both are expected to run Monday from 08:00 to 08:10. The combined shared-source interval is 08:00–08:10. Water volume is unknown.
+> This plant is covered by zones 2 and 5. Both are expected to run Monday from 08:00 to 08:10, giving an elapsed watering interval of 08:00–08:10. The owner notes that these zones activate the same hose here. Water volume is unknown.
 
 Provide an Export for Advice action that generates, from one immutable in-memory snapshot:
 
@@ -135,7 +135,7 @@ Provide an Export for Advice action that generates, from one immutable in-memory
 
 Stamp all artifacts with the same document/export identity and time. Include the reference week, timezone, schedule verification status, and approximation assumptions. Keep confirmed facts, estimates, unknowns, planned plants, and proposed schedules distinct.
 
-Show a “needs checking” list for unidentified plants, incomplete zone coverage, unknown overlap relationships, missing station mappings, and controller settings that prevent reliable timing. Location, sun, establishment, soil/container conditions, and seasonal context remain useful inputs even though precise water volume is outside scope.
+Show a “needs checking” list for unidentified plants, incomplete zone coverage, stale overlap notes, missing station mappings, and controller settings that prevent reliable timing. An unknown physical source relationship does not block the time calculation. Location, sun, establishment, soil/container conditions, and seasonal context remain useful inputs even though precise water volume is outside scope.
 
 Users obtain advice from an external LLM and manually record chosen schedules and maintenance. Retain the source export identity with advice-derived schedule records. Text tasks support a plant/zone/property target, due date, optional repeat interval, completion, and notes. Photo attachments and ZIP asset packages are deferred; the first version’s JSON is self-contained without external photo files.
 
@@ -151,7 +151,7 @@ Verify these scenarios:
 - The fixed lot measures 40 × 120 feet, with the west driveway at the bottom and north on the left. Incorrect illustrated plants are absent; zoom and export preserve geometry and scale.
 - A container plant on stairs can belong to multiple zones and retain its supporting surface and notes after file round-trip.
 - Disconnected pieces of one zone do not duplicate watering; intersections between different zones remain visible and retain all memberships. Editing geometry invalidates affected interpretations when necessary.
-- Shared-source overlap matches all four time examples above. Independent sources remain separate, and an unknown arrangement produces a clear qualification. Mixed three-zone overlaps combine only the identified shared sources.
+- Elapsed overlap intervals match all four time examples above for shared, independent, and unknown source arrangements. Original zone events stay separate and retain their provenance. Mixed three-zone overlaps include only zones actually covering the plant/area; optional hose notes never change elapsed-time arithmetic.
 - Program sequencing, Stack/Overlap, repeated starts, station delays, water-budget cycles, and midnight/week transitions produce consistent station and plant timelines. Unverified controller behavior is not presented as exact.
 - A Monday/Wednesday/Friday program assigning a station 10 minutes once per day exports the corresponding dated start/end intervals when confirmed settings introduce no adjustment or additional runs, with no aggregate duration or frequency fields. Tests can calculate the expected duration from those timestamps.
 - Retiring a plant preserves its history but removes it from current advice. Mixed plant groups cannot silently receive one misleading coverage summary.
