@@ -1,5 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { newYardDocument, parseYardDocument } from "./document";
+import {
+  newYardDocument,
+  parseYardDocument,
+  upgradeAdditiveMap,
+} from "./document";
 
 describe("yard document handoff", () => {
   test("new file starts with eight empty, unmapped zones and unknown controller settings", () => {
@@ -91,5 +95,49 @@ describe("yard document handoff", () => {
       value: 90,
       status: "confirmed",
     });
+  });
+
+  test("offers a deliberate upgrade only when old surfaces are unchanged", () => {
+    const document = newYardDocument();
+    document.location.name = "Existing yard";
+    document.plants.push({
+      id: "inside-added-surface",
+      label: "Plant to check",
+      species: null,
+      position: [20, 70],
+      group: null,
+      status: "existing",
+      establishmentDate: null,
+      sizeNotes: "",
+      sun: null,
+      soil: null,
+      notes: "",
+      growingSetting: {
+        kind: "ground",
+        surfaceId: "lawn",
+        containerWidthFeet: null,
+        containerDepthFeet: null,
+        drainageNotes: null,
+      },
+      manualCoverage: null,
+    });
+    document.property.version -= 1;
+    document.property.surfaces.pop();
+    const upgraded = upgradeAdditiveMap(
+      document,
+      new Date("2026-09-12T12:00:00Z"),
+    );
+    expect(upgraded?.document.location.name).toBe("Existing yard");
+    expect(upgraded?.document.property.version).toBe(
+      document.property.version + 1,
+    );
+    expect(upgraded?.addedSurfaces.map((surface) => surface.id)).toEqual([
+      "residence",
+    ]);
+    expect(upgraded?.plantsToReview).toEqual(["Plant to check"]);
+    expect(upgraded?.document.plants[0]?.growingSetting.surfaceId).toBe("lawn");
+    expect(upgraded?.document.exportId).toBeNull();
+    document.property.surfaces[1]!.points[0] = [8, 8];
+    expect(upgradeAdditiveMap(document)).toBeNull();
   });
 });

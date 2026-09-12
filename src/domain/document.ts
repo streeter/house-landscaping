@@ -1,6 +1,10 @@
 import { z } from "zod";
-import { propertyBase, type PropertyBase } from "../property-base";
-import { revalidateOverlapNotes } from "./geometry";
+import {
+  propertyBase,
+  type PropertyBase,
+  type PropertySurface,
+} from "../property-base";
+import { pointInPolygon, revalidateOverlapNotes } from "./geometry";
 
 const id = z.string().min(1);
 const date = z.iso.date();
@@ -184,6 +188,85 @@ function canonical(value: unknown): string {
       .join(",")}}`;
   }
   return JSON.stringify(value);
+}
+
+export interface AdditiveMapUpgrade {
+  document: YardDocumentV1;
+  previousVersion: number;
+  addedSurfaces: PropertySurface[];
+  plantsToReview: string[];
+}
+
+/** Only carry a yard file forward when every existing structural surface is unchanged. */
+export function upgradeAdditiveMap(
+  input: unknown,
+  now = new Date(),
+): AdditiveMapUpgrade | null {
+  if (typeof input !== "object" || input === null || !("property" in input))
+    return null;
+  const candidate = input as Record<string, unknown>;
+  const old = candidate.property;
+  if (typeof old !== "object" || old === null || Array.isArray(old))
+    return null;
+  const previous = old as Record<string, unknown>;
+  if (
+    typeof previous.version !== "number" ||
+    !Number.isInteger(previous.version) ||
+    previous.version >= propertyBase.version ||
+    !Array.isArray(previous.surfaces)
+  )
+    return null;
+  const context = (value: Record<string, unknown>) =>
+    Object.fromEntries(
+      Object.entries(value).filter(
+        ([key]) => key !== "version" && key !== "surfaces",
+      ),
+    );
+  const oldContext = context(previous);
+  const newContext = context(
+    propertyBase as unknown as Record<string, unknown>,
+  );
+  if (canonical(oldContext) !== canonical(newContext)) return null;
+  const priorSurfaces = previous.surfaces as unknown[];
+  const currentSurfaces = propertyBase.surfaces;
+  let currentIndex = 0;
+  const priorIds = new Set<string>();
+  for (const surface of priorSurfaces) {
+    if (typeof surface !== "object" || surface === null || !("id" in surface))
+      return null;
+    const surfaceId = String(surface.id);
+    const match = currentSurfaces.findIndex(
+      (item, index) => index >= currentIndex && item.id === surfaceId,
+    );
+    if (match < 0 || canonical(surface) !== canonical(currentSurfaces[match]))
+      return null;
+    priorIds.add(surfaceId);
+    currentIndex = match + 1;
+  }
+  const addedSurfaces = currentSurfaces.filter(
+    (surface) => !priorIds.has(surface.id),
+  );
+  if (priorSurfaces.length === 0 || addedSurfaces.length === 0) return null;
+  const updated = parseYardDocument({
+    ...candidate,
+    property: structuredClone(propertyBase),
+    modifiedAt: now.toISOString(),
+    exportId: null,
+    exportedAt: null,
+  });
+  const plantsToReview = updated.plants
+    .filter((plant) =>
+      addedSurfaces.some((surface) =>
+        pointInPolygon(plant.position, surface.points),
+      ),
+    )
+    .map((plant) => plant.label);
+  return {
+    document: updated,
+    previousVersion: previous.version,
+    addedSurfaces,
+    plantsToReview,
+  };
 }
 
 export function newYardDocument(now = new Date()): YardDocumentV1 {
