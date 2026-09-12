@@ -166,6 +166,15 @@ button:disabled {
   outline: 2px solid #376f4b;
   outline-offset: 2px;
 }
+.file-bar[aria-label="Yard configurations"] label {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+.file-bar[aria-label="Yard configurations"] select {
+  max-width: 100%;
+  text-overflow: ellipsis;
+}
 .save-status {
   display: flex;
   flex-wrap: wrap;
@@ -730,11 +739,32 @@ button:disabled {
   margin-left: 6px;
 }
 
-@media (max-width: 800px) {
-  .workspace-layout {
+@media (max-width: 900px) {
+  .app-shell {
+    overflow-wrap: anywhere;
+  }
+  button,
+  .file-button {
+    min-height: 44px;
+  }
+  .workspace-toolbar button {
+    min-width: 44px;
+  }
+  input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not(
+      [type="file"]
+    ),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+  .workspace-layout,
+  .map-layout {
     grid-template-columns: 1fr;
   }
   .plant-panel {
+    max-height: none;
+  }
+  .zone-panel {
     max-height: none;
   }
   .layer-tools span {
@@ -744,14 +774,46 @@ button:disabled {
 }
 
 @media (max-width: 700px) {
+  .app-shell {
+    padding: 20px 12px 40px;
+  }
   .page-header {
     display: block;
+    margin-bottom: 20px;
   }
   .dimensions {
     margin-top: 16px;
   }
-  .map-layout {
-    grid-template-columns: 1fr;
+  .file-bar[aria-label="Yard configurations"] label {
+    display: grid;
+    flex: 1 1 100%;
+    gap: 6px;
+    min-width: 0;
+  }
+  .file-bar[aria-label="Yard configurations"] select {
+    width: 100%;
+    min-width: 0;
+  }
+  .controller-workspace,
+  .plant-panel,
+  .zone-panel,
+  .care-card,
+  .advice-export,
+  .needs-checking,
+  .resume-panel,
+  .property-section .map-notes {
+    padding: 16px;
+    min-width: 0;
+  }
+  .program-card {
+    padding: 12px;
+    min-width: 0;
+  }
+  .interactive-map {
+    padding: 12px;
+  }
+  .care-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
