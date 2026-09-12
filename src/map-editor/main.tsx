@@ -46,26 +46,50 @@ function imagePlacement(base: PropertyBase) {
   };
 }
 
+interface MapHistory {
+  past: PropertyBase[];
+  present: PropertyBase | null;
+  future: PropertyBase[];
+}
+
+const historyLimit = 100;
+
+function sameMap(a: PropertyBase, b: PropertyBase): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
 function Editor() {
-  const [base, setBase] = useState<PropertyBase | null>(null);
+  const [history, setHistory] = useState<MapHistory>({
+    past: [],
+    present: null,
+    future: [],
+  });
+  const [savedBase, setSavedBase] = useState<PropertyBase | null>(null);
+  const base = history.present;
+  const dirty = Boolean(base && savedBase && !sameMap(base, savedBase));
   const [selectedId, setSelectedId] = useState("residence");
   const [selectedVertex, setSelectedVertex] = useState<number | null>(null);
   const [drawing, setDrawing] = useState<Point[]>([]);
+  const [draftFuture, setDraftFuture] = useState<Point[]>([]);
   const [drawMode, setDrawMode] = useState(false);
   const [showReference, setShowReference] = useState(false);
   const [zoom, setZoom] = useState(1);
-  const [dirty, setDirty] = useState(false);
   const [status, setStatus] = useState("Loading map…");
   const svgRef = useRef<SVGSVGElement>(null);
-  const dragRef = useRef<{ surfaceId: string; vertex: number } | null>(null);
+  const dragRef = useRef<{
+    surfaceId: string;
+    vertex: number;
+    startBase: PropertyBase;
+  } | null>(null);
 
   const reload = async () => {
     const response = await fetch("/__map", { cache: "no-store" });
     if (!response.ok) throw new Error("Could not load the repository map");
     const next = (await response.json()) as PropertyBase;
-    setBase(next);
-    setDirty(false);
+    setHistory({ past: [], present: next, future: [] });
+    setSavedBase(next);
     setDrawing([]);
+    setDraftFuture([]);
     setDrawMode(false);
     setStatus(`Map version ${next.version} loaded from repository`);
   };
@@ -85,31 +109,142 @@ function Editor() {
   const selected =
     base?.surfaces.find((surface) => surface.id === selectedId) ?? null;
 
-  const mutate = (update: (current: PropertyBase) => PropertyBase) => {
-    setBase((current) => (current ? update(current) : current));
-    setDirty(true);
+  useEffect(() => {
+    if (!base) return;
+    if (!selected) {
+      setSelectedId("lawn");
+      setSelectedVertex(null);
+    } else if (
+      selectedVertex !== null &&
+      selectedVertex >= selected.points.length
+    ) {
+      setSelectedVertex(null);
+    }
+  }, [base, selected, selectedVertex]);
+
+  const undo = () => {
+    if (drawMode && drawing.length > 0) {
+      setDrawing(drawing.slice(0, -1));
+      setDraftFuture([drawing.at(-1)!, ...draftFuture]);
+      setStatus("Drawing point removed");
+      return;
+    }
+    if (history.past.length === 0 || !base) return;
+    const previous = history.past.at(-1)!;
+    setHistory({
+      past: history.past.slice(0, -1),
+      present: previous,
+      future: [base, ...history.future],
+    });
+    setDrawing([]);
+    setDraftFuture([]);
+    setDrawMode(false);
+    setStatus(
+      savedBase && sameMap(previous, savedBase)
+        ? "Map matches repository"
+        : "Unsaved structural changes",
+    );
+  };
+
+  const redo = () => {
+    if (drawMode && draftFuture.length > 0) {
+      setDrawing([...drawing, draftFuture[0]!]);
+      setDraftFuture(draftFuture.slice(1));
+      setStatus("Drawing point restored");
+      return;
+    }
+    if (history.future.length === 0 || !base) return;
+    const next = history.future[0]!;
+    setHistory({
+      past: [...history.past, base].slice(-historyLimit),
+      present: next,
+      future: history.future.slice(1),
+    });
+    setDrawing([]);
+    setDraftFuture([]);
+    setDrawMode(false);
+    setStatus(
+      savedBase && sameMap(next, savedBase)
+        ? "Map matches repository"
+        : "Unsaved structural changes",
+    );
+  };
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((!event.metaKey && !event.ctrlKey) || event.altKey) return;
+      const key = event.key.toLowerCase();
+      if (
+        key === "z" &&
+        !event.shiftKey &&
+        (history.past.length > 0 || (drawMode && drawing.length > 0))
+      ) {
+        event.preventDefault();
+        undo();
+      } else if (
+        ((key === "z" && event.shiftKey) ||
+          (key === "y" && event.ctrlKey && !event.shiftKey)) &&
+        (history.future.length > 0 || (drawMode && draftFuture.length > 0))
+      ) {
+        event.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
+
+  const mutate = (
+    update: (current: PropertyBase) => PropertyBase,
+    record = true,
+  ) => {
+    setHistory((current) => {
+      if (!current.present) return current;
+      const next = update(current.present);
+      if (sameMap(next, current.present)) return current;
+      return {
+        past: record
+          ? [...current.past, current.present].slice(-historyLimit)
+          : current.past,
+        present: next,
+        future: record ? [] : current.future,
+      };
+    });
     setStatus("Unsaved structural changes");
   };
 
   const updateSurface = (
     surfaceId: string,
     update: (surface: PropertySurface) => PropertySurface,
+    record = true,
   ) => {
-    mutate((current) => ({
-      ...current,
-      surfaces: current.surfaces.map((surface) =>
-        surface.id === surfaceId ? update(surface) : surface,
-      ),
-    }));
+    mutate(
+      (current) => ({
+        ...current,
+        surfaces: current.surfaces.map((surface) =>
+          surface.id === surfaceId ? update(surface) : surface,
+        ),
+      }),
+      record,
+    );
   };
 
-  const updateVertex = (surfaceId: string, index: number, point: Point) => {
-    updateSurface(surfaceId, (surface) => ({
-      ...surface,
-      points: surface.points.map((vertex, vertexIndex) =>
-        vertexIndex === index ? clampPoint(point) : vertex,
-      ),
-    }));
+  const updateVertex = (
+    surfaceId: string,
+    index: number,
+    point: Point,
+    record = true,
+  ) => {
+    updateSurface(
+      surfaceId,
+      (surface) => ({
+        ...surface,
+        points: surface.points.map((vertex, vertexIndex) =>
+          vertexIndex === index ? clampPoint(point) : vertex,
+        ),
+      }),
+      record,
+    );
   };
 
   const svgPoint = (clientX: number, clientY: number): Point => {
@@ -129,10 +264,26 @@ function Editor() {
     if (drawMode) return;
     event.stopPropagation();
     event.preventDefault();
-    dragRef.current = { surfaceId, vertex };
+    if (!base) return;
+    dragRef.current = { surfaceId, vertex, startBase: base };
     setSelectedId(surfaceId);
     setSelectedVertex(vertex);
     svgRef.current?.setPointerCapture(event.pointerId);
+  };
+
+  const finishDrag = () => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (!drag) return;
+    setHistory((current) => {
+      if (!current.present || sameMap(current.present, drag.startBase))
+        return current;
+      return {
+        ...current,
+        past: [...current.past, drag.startBase].slice(-historyLimit),
+        future: [],
+      };
+    });
   };
 
   const insertVertex = () => {
@@ -184,6 +335,7 @@ function Editor() {
     setSelectedId(id);
     setSelectedVertex(null);
     setDrawing([]);
+    setDraftFuture([]);
     setDrawMode(false);
   };
 
@@ -220,8 +372,11 @@ function Editor() {
             : "Save failed",
         );
       const saved = result as PropertyBase;
-      setBase(saved);
-      setDirty(false);
+      setHistory({ past: [], present: saved, future: [] });
+      setSavedBase(saved);
+      setDrawing([]);
+      setDraftFuture([]);
+      setDrawMode(false);
       setStatus(
         `Saved map version ${saved.version} to data/property-base.json and public/property-base.svg`,
       );
@@ -246,6 +401,29 @@ function Editor() {
           </p>
         </div>
         <div className="header-actions">
+          <button
+            type="button"
+            className="secondary"
+            onClick={undo}
+            disabled={
+              history.past.length === 0 && !(drawMode && drawing.length > 0)
+            }
+            title="Undo (⌘/Ctrl+Z)"
+          >
+            Undo
+          </button>
+          <button
+            type="button"
+            className="secondary"
+            onClick={redo}
+            disabled={
+              history.future.length === 0 &&
+              !(drawMode && draftFuture.length > 0)
+            }
+            title="Redo (⌘/Ctrl+Shift+Z or Ctrl+Y)"
+          >
+            Redo
+          </button>
           <button type="button" onClick={() => void save()} disabled={!dirty}>
             Save to repository
           </button>
@@ -291,6 +469,7 @@ function Editor() {
                 onClick={() => {
                   setDrawMode(true);
                   setDrawing([]);
+                  setDraftFuture([]);
                 }}
               >
                 Draw new surface
@@ -306,6 +485,7 @@ function Editor() {
                   onClick={() => {
                     setDrawMode(false);
                     setDrawing([]);
+                    setDraftFuture([]);
                   }}
                 >
                   Cancel
@@ -326,17 +506,19 @@ function Editor() {
                       dragRef.current.surfaceId,
                       dragRef.current.vertex,
                       svgPoint(event.clientX, event.clientY),
+                      false,
                     );
                 }}
-                onPointerUp={() => {
-                  dragRef.current = null;
-                }}
+                onPointerUp={finishDrag}
+                onPointerCancel={finishDrag}
                 onClick={(event) => {
-                  if (drawMode)
+                  if (drawMode) {
                     setDrawing((points) => [
                       ...points,
                       svgPoint(event.clientX, event.clientY),
                     ]);
+                    setDraftFuture([]);
+                  }
                 }}
                 aria-label="Editable property map"
               >
