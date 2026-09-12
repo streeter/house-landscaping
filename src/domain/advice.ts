@@ -41,7 +41,7 @@ export function needsChecking(document: YardDocumentV1): string[] {
     result.push(`Recheck stale overlap note ${note.id}.`);
   if (document.calculated.status !== "complete")
     result.push(
-      `Verify controller timing: ${document.calculated.reason ?? "incomplete prediction"}`,
+      `Resolve incomplete calculation: ${document.calculated.reason ?? "incomplete prediction"}`,
     );
   return result;
 }
@@ -86,12 +86,19 @@ export function renderYardSummary(document: YardDocumentV1): string {
   for (const plant of document.plants.filter(
     (item) => item.status !== "retired",
   )) {
-    const key = effectiveZoneIds(plant, document.zones).sort().join("|");
+    const key =
+      groupCrossingZoneIds(plant, document.zones).length > 0
+        ? "__mixed_group__"
+        : effectiveZoneIds(plant, document.zones).sort().join("|");
     groups.set(key, [...(groups.get(key) ?? []), plant]);
   }
   for (const [key, plants] of groups) {
-    const ids = key ? key.split("|") : [];
-    lines.push(`### ${zoneNames(ids, document)}`, "");
+    const mixed = key === "__mixed_group__";
+    const ids = key && !mixed ? key.split("|") : [];
+    lines.push(
+      `### ${mixed ? "Mixed coverage — split needed" : zoneNames(ids, document)}`,
+      "",
+    );
     for (const plant of plants) {
       const period = calculated.plantPeriods.find(
         (item) => item.id === plant.id,
@@ -106,10 +113,10 @@ export function renderYardSummary(document: YardDocumentV1): string {
         `  - Sun: ${display(plant.sun)}; soil: ${display(plant.soil)}; established: ${display(plant.establishmentDate)}; size: ${display(plant.sizeNotes)}.`,
       );
       lines.push(
-        `  - Geometric coverage: ${zoneNames(coveringZoneIds(plant.position, document.zones), document)}; effective coverage: ${zoneNames(ids, document)}${plant.manualCoverage ? ` (manual correction: ${plant.manualCoverage.reason})` : ""}.`,
+        `  - Geometric coverage at anchor: ${zoneNames(coveringZoneIds(plant.position, document.zones), document)}; ${mixed ? "group area crosses zones, so one effective coverage assignment is withheld until split" : `effective coverage: ${zoneNames(ids, document)}`}${plant.manualCoverage ? ` (manual correction: ${plant.manualCoverage.reason})` : ""}.`,
       );
       lines.push(
-        `  - Predicted elapsed periods: ${period?.intervals.length ? period.intervals.map((item) => `${item.start} to ${item.end}`).join("; ") : "none calculable"}. Source station event IDs: ${period?.sourceEventIds.length ? period.sourceEventIds.join(", ") : "none"}.`,
+        `  - Predicted elapsed periods: ${mixed ? "withheld for mixed group" : period?.intervals.length ? period.intervals.map((item) => `${item.start} to ${item.end}`).join("; ") : "none calculable"}. Source station event IDs: ${period?.sourceEventIds.length ? period.sourceEventIds.join(", ") : "none"}.`,
       );
       lines.push(`  - Notes: ${display(plant.notes)}`);
     }

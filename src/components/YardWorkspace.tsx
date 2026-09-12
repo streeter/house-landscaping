@@ -75,6 +75,9 @@ export function YardWorkspace({ document, onChange }: Props) {
   const selectedPeriod = document.calculated.plantPeriods.find(
     (period) => period.id === selectedId,
   );
+  const selectedGroupMixed = selected
+    ? groupCrossingZoneIds(selected, document.zones).length > 0
+    : false;
   const active = document.plants.filter((plant) => plant.status === "existing");
   const planned = document.plants.filter((plant) => plant.status === "planned");
   const retired = document.plants.filter((plant) => plant.status === "retired");
@@ -567,8 +570,10 @@ export function YardWorkspace({ document, onChange }: Props) {
                 ) || "none mapped"}
                 <br />
                 Effective coverage:{" "}
-                {effectiveZoneIds(selected, document.zones).join(", ") ||
-                  "none mapped"}
+                {selectedGroupMixed
+                  ? "mixed across group area — split needed"
+                  : effectiveZoneIds(selected, document.zones).join(", ") ||
+                    "none mapped"}
               </p>
               <div className="plant-timing">
                 <h3>Predicted watering</h3>

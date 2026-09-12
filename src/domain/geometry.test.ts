@@ -105,5 +105,12 @@ describe("coverage geometry", () => {
       manualCoverage: null,
     };
     expect(groupCrossingZoneIds(plant, document.zones)).toEqual(["zone-1"]);
+    document.zones[0]!.polygons = [square(8.2, 0, 8.4, 10)];
+    expect(groupCrossingZoneIds(plant, document.zones)).toEqual(["zone-1"]);
+    document.zones[0]!.polygons = [square(0, 0, 10, 10)];
+    document.zones[1]!.polygons = [square(10, 0, 20, 10)];
+    plant.position = [8, 5];
+    plant.group!.area = square(5, 3, 10, 7);
+    expect(groupCrossingZoneIds(plant, document.zones)).toEqual([]);
   });
 });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { newYardDocument } from "./document";
 import { calculateYardSchedule, unionIntervals } from "./timing";
+import { renderYardSummary } from "./advice";
 
 function fixture() {
   const document = newYardDocument(new Date("2026-09-07T12:00:00Z"));
@@ -187,5 +188,34 @@ describe("controller timing", () => {
     expect(result.status).toBe("complete");
     expect(result.stationEvents.map((event) => event.programId)).toEqual(["A"]);
     expect(result.stationEvents[0]?.end).toBe("2026-09-08T01:00:00-07:00");
+  });
+
+  it("withholds one watering assignment for a mixed group while retaining station events", () => {
+    const document = fixture();
+    document.plants[0]!.group = {
+      count: 4,
+      area: [
+        [5, 5],
+        [25, 5],
+        [25, 15],
+        [5, 15],
+      ],
+    };
+    const program = document.controller.settings.programs[0]!;
+    program.weekdays = [0];
+    program.startTimes = ["08:00"];
+    program.stationRuntimes = [
+      { stationNumber: 1, minutes: 10 },
+      { stationNumber: 2, minutes: 10 },
+    ];
+    const result = calculateYardSchedule(document);
+    expect(result.status).toBe("partial");
+    expect(result.reason).toMatch(/Mixed coverage/);
+    expect(result.stationEvents).toHaveLength(2);
+    expect(result.plantPeriods[0]?.effectiveZoneIds).toEqual([]);
+    expect(result.plantPeriods[0]?.sourceEventIds).toEqual([]);
+    expect(result.plantPeriods[0]?.intervals).toEqual([]);
+    document.calculated = result;
+    expect(renderYardSummary(document)).toContain("withheld for mixed group");
   });
 });

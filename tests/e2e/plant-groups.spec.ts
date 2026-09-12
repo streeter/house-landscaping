@@ -84,6 +84,7 @@ test("a mixed group can be drawn and split without losing notes or stable identi
   await expect(
     page.getByRole("heading", { name: "Existing (2)" }),
   ).toBeVisible();
+  await expect(page.locator(".group-warning")).toHaveCount(0);
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Save / Download" }).click();
   const file = JSON.parse(

@@ -1,4 +1,8 @@
-import { coveringZoneIds, effectiveZoneIds } from "./geometry";
+import {
+  coveringZoneIds,
+  effectiveZoneIds,
+  groupCrossingZoneIds,
+} from "./geometry";
 import type {
   Calculated,
   ControllerSettings,
@@ -284,6 +288,8 @@ export function calculateYardSchedule(document: YardDocumentV1): Calculated {
     .filter((plant) => plant.status !== "retired")
     .map((plant) => {
       const geometric = coveringZoneIds(plant.position, document.zones);
+      if (groupCrossingZoneIds(plant, document.zones).length > 0)
+        return period(plant.id, geometric, [], []);
       const effective = effectiveZoneIds(plant, document.zones);
       const notes = document.overlapNotes
         .filter(
@@ -309,18 +315,26 @@ export function calculateYardSchedule(document: YardDocumentV1): Calculated {
   const unmapped = document.zones.some(
     (zone) => zone.polygons.length > 0 && zone.stationNumber === null,
   );
+  const mixedGroups = document.plants.filter(
+    (plant) =>
+      plant.status !== "retired" &&
+      groupCrossingZoneIds(plant, document.zones).length > 0,
+  );
   const provisional =
     document.controller.state !== "confirmed" ||
     document.controller.verifiedAt === null ||
     assumed ||
-    unmapped;
+    unmapped ||
+    mixedGroups.length > 0;
   return {
     status: provisional ? "partial" : "complete",
     reason: unmapped
       ? "A coverage zone has no confirmed controller station mapping."
-      : provisional
-        ? "Timing uses proposed, unverified, or assumed controller settings."
-        : null,
+      : mixedGroups.length > 0
+        ? `Mixed coverage crosses ${mixedGroups.map((plant) => plant.label).join(", ")}; split groups before assigning one watering period.`
+        : provisional
+          ? "Timing uses proposed, unverified, or assumed controller settings."
+          : null,
     referenceWeekStart: document.referenceWeekStart,
     timezone,
     stationEvents: allEvents,
