@@ -1,6 +1,8 @@
 # Yard planner
 
-A local, file-based yard map and care planner. The implementation follows [the project plan](docs/yard-planning-tool.md). The first build currently contains the app and verification scaffold; the map and editor follow in subsequent PRs.
+A local, file-based yard map and care planner. The implementation follows [the project plan](docs/yard-planning-tool.md). The fixed property map is in place; editing and schedule features follow in subsequent PRs.
+
+The map uses feet in a `0 0 40 120` coordinate system. [The structural geometry](data/property-base.json) is its source of truth, with named surfaces and explicit approximate edges. `npm run map:generate` regenerates the committed SVG; the unit test checks the asset against an in-memory render. The source image is only a tracing reference, and its illustrated plants are absent from the map.
 
 ## Setup
 
@@ -23,6 +25,7 @@ Open the local URL printed by Vite. No account or deployment credentials are nee
 | `npm test`             | Run Vitest tests once                                                |
 | `npm run test:watch`   | Run Vitest in watch mode                                             |
 | `npm run build`        | Build the static site                                                |
+| `npm run map:generate` | Regenerate the fixed SVG from the property JSON                      |
 | `npm run test:e2e`     | Run Chromium and WebKit tests against a managed local preview server |
 | `npm run check`        | Run all checks above in that order                                   |
 

@@ -1,0 +1,129 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  color: #283c30;
+  background: #f4f4eb;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.app-shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 20px 56px;
+}
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  letter-spacing: -0.045em;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-weight: 800;
+  font-size: 0.75rem;
+  color: #56715b;
+}
+.intro {
+  color: #5f7164;
+  margin-bottom: 0;
+}
+.dimensions {
+  color: #56715b;
+  font-size: 0.9rem;
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+.map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 640px) minmax(220px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.map-card,
+.map-notes {
+  background: #fffdf7;
+  border: 1px solid #dce2d4;
+  border-radius: 16px;
+  box-shadow: 0 8px 30px #364a3710;
+}
+.map-card {
+  margin: 0;
+  padding: 16px;
+  display: grid;
+  justify-items: center;
+}
+.base-map {
+  width: min(100%, 370px);
+  display: block;
+  border: 1px solid #b5c3a6;
+}
+figcaption {
+  color: #718073;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  margin-top: 12px;
+  text-align: center;
+}
+.map-notes {
+  padding: 24px;
+}
+.map-notes h2 {
+  font-size: 1.1rem;
+  margin-bottom: 16px;
+}
+.map-notes dl {
+  margin: 0 0 24px;
+}
+.map-notes dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #e8ece3;
+  padding: 10px 0;
+}
+.map-notes dt {
+  color: #657769;
+}
+.map-notes dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+.map-notes p {
+  color: #657769;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  margin-bottom: 0;
+}
+
+@media (max-width: 700px) {
+  .page-header {
+    display: block;
+  }
+  .dimensions {
+    margin-top: 16px;
+  }
+  .map-layout {
+    grid-template-columns: 1fr;
+  }
+}

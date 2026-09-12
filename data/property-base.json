@@ -1,0 +1,172 @@
+{
+  "id": "house-lot",
+  "version": 1,
+  "widthFeet": 40,
+  "lengthFeet": 120,
+  "orientation": {
+    "top": "east/backyard",
+    "bottom": "west/driveway",
+    "left": "north",
+    "right": "south"
+  },
+  "tracing": {
+    "reference": "data/property.jpg",
+    "imageWidth": 316,
+    "imageHeight": 857,
+    "calibratedImageBounds": [25, 24, 305, 849],
+    "note": "Estimated from illustration; obscured edges are approximate, not surveyed. Illustrated vegetation was omitted."
+  },
+  "surfaces": [
+    {
+      "id": "lawn",
+      "label": "Yard / planting ground",
+      "kind": "ground",
+      "points": [
+        [0, 0],
+        [40, 0],
+        [40, 120],
+        [0, 120]
+      ],
+      "approximate": false
+    },
+    {
+      "id": "back-path",
+      "label": "Back path",
+      "kind": "path",
+      "points": [
+        [0, 16],
+        [4, 13],
+        [9, 5],
+        [15, 0],
+        [18, 0],
+        [13, 8],
+        [6, 18],
+        [0, 22]
+      ],
+      "approximate": true
+    },
+    {
+      "id": "patio",
+      "label": "Patio",
+      "kind": "patio",
+      "points": [
+        [10, 19.5],
+        [32.9, 19.5],
+        [32.9, 40.1],
+        [10, 40.1],
+        [10, 29],
+        [20.1, 29],
+        [20.1, 19.5]
+      ],
+      "approximate": true
+    },
+    {
+      "id": "north-side-path",
+      "label": "North side path",
+      "kind": "path",
+      "points": [
+        [0, 52],
+        [6.1, 52],
+        [6.1, 102],
+        [16.7, 102],
+        [16.7, 120],
+        [0, 120]
+      ],
+      "approximate": true
+    },
+    {
+      "id": "south-side-path",
+      "label": "South side path",
+      "kind": "path",
+      "points": [
+        [33, 31],
+        [40, 31],
+        [40, 92.5],
+        [33, 92.5]
+      ],
+      "approximate": true
+    },
+    {
+      "id": "driveway",
+      "label": "Driveway",
+      "kind": "driveway",
+      "points": [
+        [16.8, 93],
+        [30.8, 93],
+        [31.7, 98],
+        [30.7, 102],
+        [30.7, 120],
+        [16.8, 120]
+      ],
+      "approximate": true
+    },
+    {
+      "id": "porch",
+      "label": "Porch",
+      "kind": "porch",
+      "points": [
+        [5.8, 92.2],
+        [16.8, 92.2],
+        [16.8, 98.9],
+        [12.3, 98.9],
+        [12.3, 103.3],
+        [5.8, 103.3]
+      ],
+      "approximate": false
+    },
+    {
+      "id": "porch-stairs",
+      "label": "Porch stairs",
+      "kind": "stairs",
+      "points": [
+        [8.3, 103.3],
+        [12.3, 103.3],
+        [12.3, 110.7],
+        [8.3, 110.7]
+      ],
+      "approximate": true
+    },
+    {
+      "id": "north-side-stairs",
+      "label": "North side stairs",
+      "kind": "stairs",
+      "points": [
+        [0, 52],
+        [5.8, 52],
+        [5.8, 56],
+        [0, 56]
+      ],
+      "approximate": true
+    },
+    {
+      "id": "south-side-stairs",
+      "label": "South side stairs",
+      "kind": "stairs",
+      "points": [
+        [33, 87],
+        [40, 87],
+        [40, 92.5],
+        [33, 92.5]
+      ],
+      "approximate": true
+    },
+    {
+      "id": "residence",
+      "label": "Residence",
+      "kind": "building",
+      "points": [
+        [6.1, 43.6],
+        [33.3, 43.6],
+        [33.3, 83],
+        [34.6, 83],
+        [34.6, 87.9],
+        [33.3, 87.9],
+        [33.3, 95.6],
+        [16.8, 95.6],
+        [16.8, 92.2],
+        [6.1, 92.2]
+      ],
+      "approximate": false
+    }
+  ]
+}
