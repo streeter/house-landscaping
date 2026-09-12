@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
-import { inferSurfaceId } from "../domain/geometry";
+import {
+  coveringZoneIds,
+  effectiveZoneIds,
+  inferSurfaceId,
+} from "../domain/geometry";
 import type { Plant, YardDocumentV1 } from "../domain/document";
 import type { Point } from "../property-base";
+import { ZoneLayers } from "./ZoneLayers";
 
 interface Props {
   document: YardDocumentV1;
@@ -46,6 +51,7 @@ export function YardWorkspace({ document, onChange }: Props) {
   const [pan, setPan] = useState<Point>([0, 0]);
   const [showBase, setShowBase] = useState(true);
   const [showPlants, setShowPlants] = useState(true);
+  const [showZones, setShowZones] = useState(true);
   const [showGrid, setShowGrid] = useState(false);
   const [previewPoint, setPreviewPoint] = useState<Point | null>(null);
   const [past, setPast] = useState<YardDocumentV1[]>([]);
@@ -330,6 +336,14 @@ export function YardWorkspace({ document, onChange }: Props) {
         <label>
           <input
             type="checkbox"
+            checked={showZones}
+            onChange={(event) => setShowZones(event.target.checked)}
+          />{" "}
+          Zones
+        </label>
+        <label>
+          <input
+            type="checkbox"
             checked={showGrid}
             onChange={(event) => setShowGrid(event.target.checked)}
           />{" "}
@@ -373,6 +387,9 @@ export function YardWorkspace({ document, onChange }: Props) {
                 height="120"
                 pointerEvents="none"
               />
+            )}
+            {showZones && (
+              <ZoneLayers zones={document.zones} idPrefix="plant-map" />
             )}
             {showGrid && (
               <g
@@ -495,6 +512,16 @@ export function YardWorkspace({ document, onChange }: Props) {
             <div className="plant-details">
               <h2>Plant details</h2>
               <p className="record-id">ID: {selected.id}</p>
+              <p className="coverage-detail">
+                Geometric coverage:{" "}
+                {coveringZoneIds(selected.position, document.zones).join(
+                  ", ",
+                ) || "none mapped"}
+                <br />
+                Effective coverage:{" "}
+                {effectiveZoneIds(selected, document.zones).join(", ") ||
+                  "none mapped"}
+              </p>
               <label>
                 Label
                 <input
