@@ -295,6 +295,8 @@ export function calculateYardSchedule(document: YardDocumentV1): Calculated {
         .filter(
           (note) =>
             !note.stale &&
+            note.point[0] === plant.position[0] &&
+            note.point[1] === plant.position[1] &&
             note.zoneIds.every((zoneId) => effective.includes(zoneId)),
         )
         .map((note) => note.id);

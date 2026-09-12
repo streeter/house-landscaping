@@ -1,6 +1,6 @@
 # Yard planner
 
-A local, file-based yard map and care planner. The implementation follows [the project plan](docs/yard-planning-tool.md). The fixed property map and portable file workflow are in place; plant/zone editing and schedules follow in subsequent PRs.
+A local, file-based yard map and care planner. The implementation follows [the project plan](docs/yard-planning-tool.md): edit plants and irrigation coverage, model Rain Dial schedules, inspect predicted watering, and export a portable yard file and advice bundle.
 
 The app autosaves its working copy in the current browser. On a later visit, choose **Resume browser draft** to continue. **Open file** validates and replaces the working copy; **Save / Download** and **Save As** create a portable `yard.json`. The status line distinguishes browser storage from a file export and identifies edits since the last download. Move the downloaded file to another browser or device and open it there; no account or automatic synchronization is involved.
 
@@ -17,6 +17,8 @@ In **Irrigation coverage**, assign each yard zone its actual controller station 
 Selecting a plant or clicking a coverage point also shows its predicted elapsed watering periods and the original station events behind them. In an overlap, concurrent station runs remain separate sources even when their elapsed exposure is one period.
 
 Click an overlap to record whether its zones turn on the same hose or independent sources. Notes stay attached to their mapped point and are flagged for checking after geometry changes. A plant’s **Correct coverage** control records observed zone membership and a reason separately from the geometric result; it never implies a shared hose.
+
+Physical source notes describe the point where they were recorded. Plant exports only attach a note at that same anchor; notes elsewhere remain separate overlap context even when the plant belongs to the same zones.
 
 In **Rain Dial schedule**, enter the property timezone, reference Monday, controller mode and execution settings, then weekdays, start times, runtimes, and budgets for programs A/B/C. Record whether each setting is confirmed, assumed, or unknown, and distinguish a proposed schedule from settings verified on the controller. Type `none` for a verified absence of sensor/weather adjustment. The timeline shows predicted station runs; unresolved controller behavior is explained rather than assigned exact times. Each file save recalculates station events and plant/overlap elapsed intervals from the current map and settings.
 

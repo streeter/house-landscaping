@@ -218,4 +218,35 @@ describe("controller timing", () => {
     document.calculated = result;
     expect(renderYardSummary(document)).toContain("withheld for mixed group");
   });
+
+  it("does not attribute a distant hose note to a plant in the same zones", () => {
+    const document = fixture();
+    const program = document.controller.settings.programs[0]!;
+    program.weekdays = [0];
+    program.startTimes = ["08:00"];
+    program.stationRuntimes = [{ stationNumber: 1, minutes: 10 }];
+    document.overlapNotes = [
+      {
+        id: "here",
+        point: [15, 10],
+        zoneIds: ["zone-1", "zone-2"],
+        relationship: "shared-hose",
+        notes: "Observed here",
+        stale: false,
+      },
+      {
+        id: "elsewhere",
+        point: [16, 10],
+        zoneIds: ["zone-1", "zone-2"],
+        relationship: "independent-sources",
+        notes: "Different line",
+        stale: false,
+      },
+    ];
+    const result = calculateYardSchedule(document);
+    expect(result.plantPeriods[0]?.sourceNoteIds).toEqual(["here"]);
+    expect(result.overlapPeriods.map((period) => period.sourceNoteIds)).toEqual(
+      [["here"], ["elsewhere"]],
+    );
+  });
 });
