@@ -288,7 +288,7 @@ export function parseYardDocument(input: unknown): YardDocumentV1 {
   // Derived data in a handoff file is never trusted as source data.
   const candidate =
     typeof input === "object" && input !== null
-      ? { ...input, calculated: newYardDocument().calculated }
+      ? { ...migrateDelay(input), calculated: newYardDocument().calculated }
       : input;
   const document = yardSchema.parse(candidate);
   const zoneIds = document.zones.map((item) => item.id);
@@ -361,5 +361,53 @@ export function parseYardDocument(input: unknown): YardDocumentV1 {
       referenceWeekStart: document.referenceWeekStart,
       timezone: document.location.timezone,
     },
+  };
+}
+
+function migrateDelay(input: object): object {
+  const record = input as Record<string, unknown>;
+  const migrateSettings = (settings: unknown): unknown => {
+    if (typeof settings !== "object" || settings === null) return settings;
+    const fields = settings as Record<string, unknown>;
+    if (!("stationDelayMinutes" in fields) || "stationDelaySeconds" in fields)
+      return settings;
+    const { stationDelayMinutes, ...rest } = fields;
+    if (typeof stationDelayMinutes !== "object" || stationDelayMinutes === null)
+      return settings;
+    const old = stationDelayMinutes as Record<string, unknown>;
+    return {
+      ...rest,
+      stationDelaySeconds: {
+        ...old,
+        value: old.value === null ? null : Number(old.value) * 60,
+      },
+    };
+  };
+  const controller = record.controller;
+  const migratedController =
+    typeof controller === "object" && controller !== null
+      ? {
+          ...controller,
+          settings: migrateSettings(
+            (controller as Record<string, unknown>).settings,
+          ),
+        }
+      : controller;
+  const schedules = Array.isArray(record.scheduleRecords)
+    ? record.scheduleRecords.map((item: unknown) =>
+        typeof item === "object" && item !== null
+          ? {
+              ...item,
+              settings: migrateSettings(
+                (item as Record<string, unknown>).settings,
+              ),
+            }
+          : item,
+      )
+    : record.scheduleRecords;
+  return {
+    ...record,
+    controller: migratedController,
+    scheduleRecords: schedules,
   };
 }

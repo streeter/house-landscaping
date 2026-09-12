@@ -2,6 +2,7 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import { propertyBase } from "./property-base";
 import { YardWorkspace } from "./components/YardWorkspace";
 import { ZoneWorkspace } from "./components/ZoneWorkspace";
+import { ControllerWorkspace } from "./components/ControllerWorkspace";
 import {
   createFileSnapshot,
   downloadText,
@@ -100,13 +101,19 @@ export function App() {
       : copy.filename;
     if (requestedName === null) return;
     const filename = requestedName.trim().replace(/[\\/]/g, "") || "yard.json";
-    const next = createFileSnapshot({
-      ...copy,
-      filename: filename.endsWith(".json") ? filename : `${filename}.json`,
-    });
-    downloadText(serializeYardFile(next), next.filename);
-    setCopy(next);
-    setFileError(null);
+    try {
+      const next = createFileSnapshot({
+        ...copy,
+        filename: filename.endsWith(".json") ? filename : `${filename}.json`,
+      });
+      downloadText(serializeYardFile(next), next.filename);
+      setCopy(next);
+      setFileError(null);
+    } catch (error) {
+      setFileError(
+        `Could not save file: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   };
 
   return (
@@ -191,6 +198,13 @@ export function App() {
           />
           <ZoneWorkspace
             key={`${copy.document.id}-zones`}
+            document={copy.document}
+            onChange={(next) =>
+              setCopy((previous) => editWorkingCopy(previous, () => next))
+            }
+          />
+          <ControllerWorkspace
+            key={`${copy.document.id}-controller`}
             document={copy.document}
             onChange={(next) =>
               setCopy((previous) => editWorkingCopy(previous, () => next))

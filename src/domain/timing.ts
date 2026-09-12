@@ -102,6 +102,9 @@ function budget(
 export function calculateYardSchedule(document: YardDocumentV1): Calculated {
   const timezone = document.location.timezone;
   const settings = document.controller.settings;
+  const monday = Date.parse(`${document.referenceWeekStart}T00:00:00Z`);
+  if (!Number.isFinite(monday) || new Date(monday).getUTCDay() !== 1)
+    return unresolved(document, "Reference week must start on a Monday.");
   if (!timezone) return unresolved(document, "Property timezone is unknown.");
   let weekStart: number;
   try {
@@ -133,7 +136,8 @@ export function calculateYardSchedule(document: YardDocumentV1): Calculated {
     settings.rainDelayDays.value === null ||
     settings.rainDelayDays.value > 0 ||
     settings.sensorAdjustment.value === null ||
-    settings.sensorAdjustment.value.trim()
+    (settings.sensorAdjustment.value.trim() &&
+      settings.sensorAdjustment.value.trim().toLowerCase() !== "none")
   )
     return unresolved(
       document,
@@ -141,7 +145,6 @@ export function calculateYardSchedule(document: YardDocumentV1): Calculated {
     );
 
   const requests: Request[] = [];
-  const monday = Date.parse(`${document.referenceWeekStart}T00:00:00Z`);
   for (let day = -2; day <= 6; day++) {
     const date = new Date(monday + day * dayMs).toISOString().slice(0, 10);
     const midnight = localMidnight(date, timezone);
@@ -295,13 +298,13 @@ export function calculateYardSchedule(document: YardDocumentV1): Calculated {
     .filter((note) => !note.stale)
     .map((note) => period(note.id, note.zoneIds, note.zoneIds, [note.id]));
   const assumed =
-    settings.mode.status === "assumed" ||
-    settings.stationDelaySeconds.status === "assumed" ||
-    settings.monthlyWaterBudgetEnabled.status === "assumed" ||
-    settings.rainDelayDays.status === "assumed" ||
-    settings.sensorAdjustment.status === "assumed" ||
+    settings.mode.status !== "confirmed" ||
+    settings.stationDelaySeconds.status !== "confirmed" ||
+    settings.monthlyWaterBudgetEnabled.status !== "confirmed" ||
+    settings.rainDelayDays.status !== "confirmed" ||
+    settings.sensorAdjustment.status !== "confirmed" ||
     settings.programs.some(
-      (program) => program.waterBudgetPercent.status === "assumed",
+      (program) => program.waterBudgetPercent.status !== "confirmed",
     );
   const unmapped = document.zones.some(
     (zone) => zone.polygons.length > 0 && zone.stationNumber === null,
