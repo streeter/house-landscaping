@@ -125,6 +125,7 @@ const yardSchema = z.strictObject({
   modifiedAt: timestamp,
   exportId: id.nullable(),
   exportedAt: timestamp.nullable(),
+  referenceWeekStart: date,
   property: propertySnapshot,
   location: z.strictObject({
     name: z.string(),
@@ -214,6 +215,7 @@ export function newYardDocument(now = new Date()): YardDocumentV1 {
     modifiedAt: stamp,
     exportId: null,
     exportedAt: null,
+    referenceWeekStart,
     property: structuredClone(propertyBase),
     location: { name: "", timezone: null, growingNotes: "" },
     plants: [],
@@ -354,5 +356,10 @@ export function parseYardDocument(input: unknown): YardDocumentV1 {
   return {
     ...document,
     overlapNotes: revalidateOverlapNotes(document.overlapNotes, document.zones),
+    calculated: {
+      ...document.calculated,
+      referenceWeekStart: document.referenceWeekStart,
+      timezone: document.location.timezone,
+    },
   };
 }

@@ -116,6 +116,124 @@ figcaption {
   margin-bottom: 0;
 }
 
+button,
+input,
+textarea {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+  border: 1px solid #376f4b;
+  background: #376f4b;
+  color: white;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.subtle-button {
+  background: transparent;
+  color: #376f4b;
+}
+.file-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+.file-button {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #376f4b;
+  border-radius: 8px;
+  color: #376f4b;
+  background: #fffdf7;
+  padding: 9px 14px;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+.file-button input {
+  width: 0;
+  height: 0;
+  opacity: 0;
+  position: absolute;
+}
+.file-button:focus-within {
+  outline: 2px solid #376f4b;
+  outline-offset: 2px;
+}
+.save-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  color: #4e6b52;
+  font-size: 0.8rem;
+  margin-bottom: 20px;
+}
+.save-status span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.save-status span::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6a9a6b;
+}
+.error-message {
+  background: #fce9e4;
+  color: #973a2a;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 0.87rem;
+}
+.resume-panel {
+  background: #e8f0e3;
+  border: 1px solid #bfd3bc;
+  border-radius: 12px;
+  padding: 22px;
+  margin-bottom: 20px;
+}
+.resume-panel h2 {
+  font-size: 1.25rem;
+  margin-bottom: 8px;
+}
+.resume-panel p {
+  color: #516b55;
+}
+.resume-panel button {
+  margin-right: 8px;
+}
+.map-notes label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.84rem;
+  font-weight: 650;
+  margin-bottom: 16px;
+}
+.map-notes input,
+.map-notes textarea {
+  width: 100%;
+  border: 1px solid #cad7c7;
+  border-radius: 7px;
+  background: white;
+  color: #283c30;
+  padding: 10px;
+  font-weight: 400;
+}
+.map-notes textarea {
+  resize: vertical;
+}
+.map-notes h2:not(:first-child) {
+  margin-top: 28px;
+}
+
 @media (max-width: 700px) {
   .page-header {
     display: block;

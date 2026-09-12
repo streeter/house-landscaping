@@ -41,6 +41,7 @@ describe("yard document handoff", () => {
 
   test("discards imported calculations and revalidates overlap notes", () => {
     const document = newYardDocument();
+    document.referenceWeekStart = "2026-06-01";
     document.zones[0]!.polygons = [
       [
         [0, 0],
@@ -70,6 +71,7 @@ describe("yard document handoff", () => {
     const input = { ...document, calculated: { weeklyMinutes: 999999 } };
     const parsed = parseYardDocument(input);
     expect(parsed.calculated.stationEvents).toEqual([]);
+    expect(parsed.calculated.referenceWeekStart).toBe("2026-06-01");
     expect(parsed.overlapNotes[0]?.stale).toBe(false);
   });
 });
