@@ -13,6 +13,7 @@
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
     "map:generate": "node --experimental-strip-types scripts/generate-property.ts",
+    "map:edit": "vite --mode map-editor --host 127.0.0.1 --port 5174 --strictPort --open /tools/map-editor.html",
     "test:e2e": "playwright test",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && npm run test:e2e"
   },

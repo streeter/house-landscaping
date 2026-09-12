@@ -27,6 +27,7 @@ Use `data/property.jpg` only as the tracing reference. Its illustrated plants ar
 - Use feet as the common coordinate unit for the base map, zone polygons, and plants. The SVG view box is `0 0 40 120`: origin at the northeast corner, x increasing southward to the right, y increasing westward downward.
 - Show north pointing left, a scale bar, optional grid, and approximate horizontal distances and areas. Structural positions are estimates from the illustration, not surveyed measurements.
 - Keep structures fixed during ordinary editing. Later corrections update the versioned built-in map while retaining the same property coordinate system; an imported file with an incompatible map version must be identified before editing.
+- Provide a local-only map-maintenance editor for these later corrections. It opens the versioned structural JSON as an SVG canvas with the tracing image available as an overlay; allow selecting surfaces, moving and adding polygon vertices, adjusting labels/types, and saving a new map version directly into the repository. Regenerate the SVG from JSON on save and run the same checks before committing the updated assets. This is a development tool, separate from ordinary yard editing and absent from the hosted app.
 
 The base map ships with the app. If hosted, it is accessible to anyone who can access the site, even though editable yard data stays in the browser. Run locally for now. Later, Vercel will serve the static app and base map without storing yard state; decide host-level access protection when setting up that deployment. No application account system or Vercel credentials are required for the initial local/GitHub test loop.
 
@@ -143,12 +144,14 @@ Users obtain advice from an external LLM and manually record chosen schedules an
 
 1. Establish the Vite app, strict TypeScript configuration, linting, test runners, and GitHub Actions workflow. Keep the same checks runnable locally throughout implementation.
 2. Prepare and review the structural trace, then generate the fixed SVG and property metadata.
-3. Implement plant/zone editing, overlap visualization, and the local draft + file open/save workflow.
-4. Add controller program entry, timing calculation, combined watering intervals, advice exports, and simple care records. Run the full local checks, push to GitHub, and verify the corresponding Actions run succeeds. Configure Vercel deployment later.
+3. Add the local map-maintenance editor so structural corrections can update the JSON and regenerated SVG in the repository with a new map version.
+4. Implement plant/zone editing, overlap visualization, and the local draft + file open/save workflow.
+5. Add controller program entry, timing calculation, combined watering intervals, advice exports, and simple care records. Run the full local checks, push to GitHub, and verify the corresponding Actions run succeeds. Configure Vercel deployment later.
 
 Verify these scenarios:
 
 - The fixed lot measures 40 × 120 feet, with the west driveway at the bottom and north on the left. Incorrect illustrated plants are absent; zoom and export preserve geometry and scale.
+- A local map edit moves a vertex, changes a label, and saves revised JSON and reproducible SVG in the repository with an incremented map version. An old yard file is rejected as incompatible until deliberately reconciled with that map.
 - A container plant on stairs can belong to multiple zones and retain its supporting surface and notes after file round-trip.
 - Disconnected pieces of one zone do not duplicate watering; intersections between different zones remain visible and retain all memberships. Editing geometry invalidates affected overlap notes when necessary.
 - Elapsed overlap intervals match all four time examples above for shared, independent, and unknown source arrangements. Original zone events stay separate and retain their provenance. Mixed three-zone overlaps include only zones actually covering the plant/area; optional hose notes never change elapsed-time arithmetic.
