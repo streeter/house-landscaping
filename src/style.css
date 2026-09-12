@@ -658,6 +658,30 @@ button:disabled {
 .calculation-status.partial {
   color: #8c6021;
 }
+.advice-export,
+.needs-checking {
+  margin: 24px 0;
+  padding: 20px;
+  border: 1px solid #c8d5c4;
+  border-radius: 12px;
+  background: #f8faf6;
+}
+.advice-export h2,
+.needs-checking h2 {
+  margin-top: 0;
+}
+.advice-export textarea {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  padding: 9px;
+  border: 1px solid #bfcdbb;
+  border-radius: 6px;
+  font: inherit;
+}
+.needs-checking li {
+  margin: 5px 0;
+}
 
 @media (max-width: 800px) {
   .workspace-layout {
