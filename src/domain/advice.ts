@@ -122,6 +122,15 @@ export function renderYardSummary(document: YardDocumentV1): string {
     );
   if (document.overlapNotes.length === 0)
     lines.push("No physical source relationships recorded.");
+  lines.push("", "## Recorded overlap watering", "");
+  for (const period of calculated.overlapPeriods) {
+    const note = document.overlapNotes.find((item) => item.id === period.id);
+    lines.push(
+      `- ${zoneNames(period.effectiveZoneIds, document)} at note ${period.id}: ${period.intervals.length ? period.intervals.map((item) => `${item.start} to ${item.end}`).join("; ") : "none calculable"}; source events ${period.sourceEventIds.join(", ") || "none"}; relationship ${note?.relationship ?? "unknown"}.`,
+    );
+  }
+  if (calculated.overlapPeriods.length === 0)
+    lines.push("No current overlap points recorded.");
   lines.push("", "## Care history and decisions", "");
   for (const record of document.observations)
     lines.push(

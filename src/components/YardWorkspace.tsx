@@ -74,6 +74,9 @@ export function YardWorkspace({ document, onChange }: Props) {
   const viewHeight = 120 / zoom;
   const selected =
     document.plants.find((plant) => plant.id === selectedId) ?? null;
+  const selectedPeriod = document.calculated.plantPeriods.find(
+    (period) => period.id === selectedId,
+  );
   const active = document.plants.filter((plant) => plant.status === "existing");
   const planned = document.plants.filter((plant) => plant.status === "planned");
   const retired = document.plants.filter((plant) => plant.status === "retired");
@@ -620,6 +623,35 @@ export function YardWorkspace({ document, onChange }: Props) {
                 {effectiveZoneIds(selected, document.zones).join(", ") ||
                   "none mapped"}
               </p>
+              <div className="plant-timing">
+                <h3>Predicted watering</h3>
+                <p>
+                  {document.calculated.status}
+                  {document.calculated.reason
+                    ? ` · ${document.calculated.reason}`
+                    : ""}
+                </p>
+                {selectedPeriod?.intervals.length ? (
+                  <ol>
+                    {selectedPeriod.intervals.map((interval) => (
+                      <li key={interval.start}>
+                        {interval.start} to {interval.end}
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p>
+                    No calculable intervals for this plant in the reference
+                    week.
+                  </p>
+                )}
+                {selectedPeriod && (
+                  <p>
+                    Source station events:{" "}
+                    {selectedPeriod.sourceEventIds.join(", ") || "none"}
+                  </p>
+                )}
+              </div>
               {selected.manualCoverage && (
                 <p className="coverage-detail">
                   Manual correction: {selected.manualCoverage.reason}
