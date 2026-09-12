@@ -80,7 +80,7 @@ const program = z.strictObject({
 const controllerSettings = z.strictObject({
   model: z.literal("Irritrol Rain Dial RD-900-R"),
   mode: setting(z.enum(["stack", "overlap"])),
-  stationDelayMinutes: setting(z.number().min(0)),
+  stationDelaySeconds: setting(z.number().int().min(0).max(7200)),
   monthlyWaterBudgetEnabled: setting(z.boolean()),
   rainDelayDays: setting(z.number().int().min(0)),
   sensorAdjustment: setting(z.string()),
@@ -196,7 +196,7 @@ export function newYardDocument(now = new Date()): YardDocumentV1 {
   const settings: ControllerSettings = {
     model: "Irritrol Rain Dial RD-900-R",
     mode: { value: null, status: "unknown" },
-    stationDelayMinutes: { value: null, status: "unknown" },
+    stationDelaySeconds: { value: null, status: "unknown" },
     monthlyWaterBudgetEnabled: { value: null, status: "unknown" },
     rainDelayDays: { value: null, status: "unknown" },
     sensorAdjustment: { value: null, status: "unknown" },
