@@ -35,6 +35,34 @@ test("scrolling over the full-height map moves the page", async ({
   }
 });
 
+test("surface picker shows types and offers terrace", async ({ page }) => {
+  await page.goto("http://127.0.0.1:5174/tools/map-editor.html");
+  await expect(page.getByRole("status")).toContainText(
+    "loaded from repository",
+  );
+  const surfaces = page.getByRole("combobox", { name: "Select surface" });
+  await expect(surfaces.locator('option[value="lawn"]')).toHaveText(
+    "Yard / planting ground (ground)",
+  );
+  await surfaces.selectOption("lawn");
+  await expect(
+    page.getByRole("combobox", { name: "Surface type" }),
+  ).toHaveValue("ground");
+  await expect(
+    page.getByRole("combobox", { name: "Surface type" }),
+  ).toBeDisabled();
+  await surfaces.selectOption("patio");
+  await page
+    .getByRole("combobox", { name: "Surface type" })
+    .selectOption("terrace");
+  await expect(surfaces.locator('option[value="patio"]')).toHaveText(
+    "Patio (terrace)",
+  );
+  await expect(
+    page.getByRole("button", { name: "Save to repository" }),
+  ).toBeEnabled();
+});
+
 test("local map editor adjusts geometry without writing source files", async ({
   page,
 }) => {

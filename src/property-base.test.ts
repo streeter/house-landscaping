@@ -47,4 +47,11 @@ describe("fixed property map", () => {
       'id="raised-planter" data-kind="planter"',
     );
   });
+
+  test("renders terraces with their own surface type and color", () => {
+    const base = structuredClone(propertyBase);
+    base.surfaces.find((surface) => surface.id === "patio")!.kind = "terrace";
+    expect(renderPropertySvg(base)).toContain('id="patio" data-kind="terrace"');
+    expect(renderPropertySvg(base)).toContain('fill="#c9c4b2"');
+  });
 });

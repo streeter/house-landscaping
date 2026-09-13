@@ -45,4 +45,14 @@ describe("local map save", () => {
     const saved = validateMapEdit(input, propertyBase);
     expect(saved.surfaces.at(-1)?.kind).toBe("planter");
   });
+
+  test("accepts a terrace surface without changing stable IDs", () => {
+    const input = structuredClone(propertyBase);
+    input.surfaces.find((surface) => surface.id === "patio")!.kind = "terrace";
+    const saved = validateMapEdit(input, propertyBase);
+    expect(saved.surfaces.find((surface) => surface.id === "patio")?.kind).toBe(
+      "terrace",
+    );
+    expect(saved.surfaces[0]).toMatchObject({ id: "lawn", kind: "ground" });
+  });
 });

@@ -13,6 +13,7 @@ const kinds: SurfaceKind[] = [
   "planter",
   "path",
   "patio",
+  "terrace",
   "driveway",
   "porch",
   "stairs",
@@ -23,6 +24,7 @@ const colors: Record<SurfaceKind, string> = {
   planter: "#b28457",
   path: "#d9dcd5",
   patio: "#d8d6cd",
+  terrace: "#c9c4b2",
   driveway: "#d4d8d7",
   porch: "#d3d0c3",
   stairs: "#c1c6bd",
@@ -613,14 +615,17 @@ function Editor() {
             >
               {base?.surfaces.map((surface) => (
                 <option key={surface.id} value={surface.id}>
-                  {surface.label} ({surface.id})
+                  {surface.label} ({surface.kind})
                 </option>
               ))}
             </select>
           </label>
           {selected && (
             <>
-              <p className="surface-id">Stable ID: {selected.id}</p>
+              <p className="surface-id">
+                Stable ID: {selected.id}
+                {selected.id === "lawn" ? " (legacy name; type is ground)" : ""}
+              </p>
               <label>
                 Label
                 <input
@@ -637,6 +642,7 @@ function Editor() {
                 Surface type
                 <select
                   value={selected.kind}
+                  disabled={selected.id === "lawn"}
                   onChange={(event) =>
                     updateSurface(selected.id, (surface) => ({
                       ...surface,
