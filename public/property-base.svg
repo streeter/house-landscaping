@@ -6,8 +6,7 @@
     <pattern id="steps" width="2" height="1.2" patternUnits="userSpaceOnUse"><path d="M0 0h2" stroke="#818d85" stroke-width=".18"/></pattern>
   </defs>
   <polygon id="lawn" data-kind="ground" points="0,0 40,0 40,120 0,120" fill="#d5e5b7" stroke="#8e9989" stroke-width="0.16"><title>Yard / planting ground</title></polygon>
-  <polygon id="back-path" data-kind="path" points="0,16 4,13 9,5 15,0 18,0 13,8 6,18 0,22" fill="#d9dcd5" stroke="#8e9989" stroke-width="0.16" stroke-dasharray="0.5 0.35"><title>Back path (approximate)</title></polygon>
-  <polygon id="patio" data-kind="patio" points="10,19.5 32.9,19.5 32.9,40.1 10,40.1 10,29 20.1,29 20.1,19.5" fill="#d8d6cd" stroke="#8e9989" stroke-width="0.16" stroke-dasharray="0.5 0.35"><title>Patio (approximate)</title></polygon>
+  <polygon id="patio" data-kind="patio" points="10.5,19.9 32.7,19.7 32.7,22.3 23,22.4 23.1,28.7 32.7,28.6 32.9,40.1 10,40.1 10,28.6 20.3,28.7 20.3,22.2 10.5,22.2" fill="#d8d6cd" stroke="#8e9989" stroke-width="0.16" stroke-dasharray="0.5 0.35"><title>Patio (approximate)</title></polygon>
   <polygon id="north-side-path" data-kind="path" points="0,52 6.1,52 6.1,102 16.7,102 16.7,120 0,120" fill="#d9dcd5" stroke="#8e9989" stroke-width="0.16" stroke-dasharray="0.5 0.35"><title>North side path (approximate)</title></polygon>
   <polygon id="south-side-path" data-kind="path" points="33,31 40,31 40,92.5 33,92.5" fill="#d9dcd5" stroke="#8e9989" stroke-width="0.16" stroke-dasharray="0.5 0.35"><title>South side path (approximate)</title></polygon>
   <polygon id="driveway" data-kind="driveway" points="16.8,93 30.8,93 31.7,98 30.7,102 30.7,120 16.8,120" fill="#d4d8d7" stroke="#8e9989" stroke-width="0.16" stroke-dasharray="0.5 0.35"><title>Driveway (approximate)</title></polygon>
@@ -16,6 +15,10 @@
   <polygon id="north-side-stairs" data-kind="stairs" points="0,52 5.8,52 5.8,56 0,56" fill="#c1c6bd" stroke="#8e9989" stroke-width="0.16" stroke-dasharray="0.5 0.35"><title>North side stairs (approximate)</title></polygon>
   <polygon id="south-side-stairs" data-kind="stairs" points="33,87 40,87 40,92.5 33,92.5" fill="#c1c6bd" stroke="#8e9989" stroke-width="0.16" stroke-dasharray="0.5 0.35"><title>South side stairs (approximate)</title></polygon>
   <polygon id="residence" data-kind="building" points="6.1,43.6 33.3,43.6 33.3,83 34.6,83 34.6,87.9 33.3,87.9 33.3,95.6 16.8,95.6 16.8,92.2 6.1,92.2" fill="#b89067" stroke="#5c4a38" stroke-width="0.4"><title>Residence</title></polygon>
+  <polygon id="surface-4720327a" data-kind="terrace" points="7.2,36.1 7.1,26.2 7.1,26.2 7.9,15.4 10.2,9.3 15.2,5.5 18.5,3.6 18.5,0.1 15.2,0.1 13.2,3.1 9.5,6 7.7,8.8 5.4,13.1 4.7,18.5 4.3,24.7 4.4,28.6 4.8,36.2" fill="#c9c4b2" stroke="#8e9989" stroke-width="0.16" stroke-dasharray="0.5 0.35"><title>Terrace 2 (approximate)</title></polygon>
+  <polygon id="surface-54f880a9" data-kind="terrace" points="7.3,36.2 9.8,36.4 10.3,19.7 10.8,14.9 12.7,11 15.9,8.2 19.3,6.9 22.9,6.6 25.9,7.1 26.3,4.9 21.2,3.9 18.4,3.8 14.7,5.9 10.2,9.2 8,15 7.1,26.3 7.4,36.1" fill="#c9c4b2" stroke="#8e9989" stroke-width="0.16" stroke-dasharray="0.5 0.35"><title>Terrace 1 (approximate)</title></polygon>
+  <polygon id="surface-d4d790ad" data-kind="terrace" points="36.5,30.7 36.5,20.2 35.4,15.7 34.1,12.4 32.4,10.3 30.5,8.1 26.7,4.8 26.2,7.1 30.2,10.8 32.1,13.9 33,18.7 33,21.1 32.9,30.6" fill="#c9c4b2" stroke="#8e9989" stroke-width="0.16" stroke-dasharray="0.5 0.35"><title>Terrace (approximate)</title></polygon>
+  <polygon id="surface-dd04cc67" data-kind="ground" points="6,40.4 6,40.4 6,43.2 32.9,43.3 32.8,40" fill="#d5e5b7" stroke="#8e9989" stroke-width="0.16" stroke-dasharray="0.5 0.35"><title>Hedge area (approximate)</title></polygon>
   <polygon points="6.1,43.6 33.3,43.6 33.3,83 34.6,83 34.6,87.9 33.3,87.9 33.3,95.6 16.8,95.6 16.8,92.2 6.1,92.2" fill="url(#wood)"/>
   <rect x="0.2" y="0.2" width="39.6" height="119.6" fill="none" stroke="#4e6951" stroke-width=".4" stroke-dasharray="1 .5"/>
   <g fill="#314837" font-family="system-ui, sans-serif" text-anchor="middle">
