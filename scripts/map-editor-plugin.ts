@@ -15,6 +15,7 @@ const kinds = new Set([
   "planter",
   "path",
   "patio",
+  "terrace",
   "driveway",
   "porch",
   "stairs",
@@ -88,7 +89,7 @@ export function validateMapEdit(
     surfaces[0].kind !== "ground"
   )
     throw new Error(
-      "Surface IDs must be unique and lawn must remain the base layer",
+      "Surface IDs must be unique and the base ground surface must remain first (stable ID: lawn)",
     );
   return { ...current, surfaces, version: current.version + 1 };
 }

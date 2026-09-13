@@ -6,6 +6,7 @@ export type SurfaceKind =
   | "planter"
   | "path"
   | "patio"
+  | "terrace"
   | "driveway"
   | "porch"
   | "stairs"
@@ -42,6 +43,7 @@ const colors: Record<SurfaceKind, string> = {
   planter: "#b28457",
   path: "#d9dcd5",
   patio: "#d8d6cd",
+  terrace: "#c9c4b2",
   driveway: "#d4d8d7",
   porch: "#d3d0c3",
   stairs: "#c1c6bd",
