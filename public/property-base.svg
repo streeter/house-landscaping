@@ -19,6 +19,8 @@
   <polygon id="surface-54f880a9" data-kind="terrace" points="7.3,36.2 9.8,36.4 10.3,19.7 10.8,14.9 12.7,11 15.9,8.2 19.3,6.9 22.9,6.6 25.9,7.1 26.3,4.9 21.2,3.9 18.4,3.8 14.7,5.9 10.2,9.2 8,15 7.1,26.3 7.4,36.1" fill="#c9c4b2" stroke="#8e9989" stroke-width="0.16" stroke-dasharray="0.5 0.35"><title>Terrace 1 (approximate)</title></polygon>
   <polygon id="surface-d4d790ad" data-kind="terrace" points="36.5,30.7 36.5,20.2 35.4,15.7 34.1,12.4 32.4,10.3 30.5,8.1 26.7,4.8 26.2,7.1 30.2,10.8 32.1,13.9 33,18.7 33,21.1 32.9,30.6" fill="#c9c4b2" stroke="#8e9989" stroke-width="0.16" stroke-dasharray="0.5 0.35"><title>Terrace (approximate)</title></polygon>
   <polygon id="surface-dd04cc67" data-kind="ground" points="6,40.4 6,40.4 6,43.2 32.9,43.3 32.8,40" fill="#d5e5b7" stroke="#8e9989" stroke-width="0.16" stroke-dasharray="0.5 0.35"><title>Hedge area (approximate)</title></polygon>
+  <polygon id="surface-bb1e2650" data-kind="ground" points="10.3,22.2 10.1,28.5 20.3,28.6 20.3,22.3" fill="#d5e5b7" stroke="#8e9989" stroke-width="0.16" stroke-dasharray="0.5 0.35"><title>North ground (approximate)</title></polygon>
+  <polygon id="surface-8fc8595f" data-kind="ground" points="23,22.3 23,28.4 32.7,28.7 32.7,22.3" fill="#d5e5b7" stroke="#8e9989" stroke-width="0.16" stroke-dasharray="0.5 0.35"><title>Ground South (approximate)</title></polygon>
   <polygon points="6.1,43.6 33.3,43.6 33.3,83 34.6,83 34.6,87.9 33.3,87.9 33.3,95.6 16.8,95.6 16.8,92.2 6.1,92.2" fill="url(#wood)"/>
   <rect x="0.2" y="0.2" width="39.6" height="119.6" fill="none" stroke="#4e6951" stroke-width=".4" stroke-dasharray="1 .5"/>
   <g fill="#314837" font-family="system-ui, sans-serif" text-anchor="middle">

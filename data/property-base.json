@@ -1,6 +1,6 @@
 {
   "id": "house-lot",
-  "version": 2,
+  "version": 3,
   "widthFeet": 40,
   "lengthFeet": 120,
   "orientation": {
@@ -239,6 +239,30 @@
         [6, 43.2],
         [32.9, 43.3],
         [32.8, 40]
+      ]
+    },
+    {
+      "id": "surface-bb1e2650",
+      "label": "North ground",
+      "kind": "ground",
+      "approximate": true,
+      "points": [
+        [10.3, 22.2],
+        [10.1, 28.5],
+        [20.3, 28.6],
+        [20.3, 22.3]
+      ]
+    },
+    {
+      "id": "surface-8fc8595f",
+      "label": "Ground South",
+      "kind": "ground",
+      "approximate": true,
+      "points": [
+        [23, 22.3],
+        [23, 28.4],
+        [32.7, 28.7],
+        [32.7, 22.3]
       ]
     }
   ]
