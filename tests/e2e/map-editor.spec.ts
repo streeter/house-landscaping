@@ -1,5 +1,40 @@
 import { expect, test } from "@playwright/test";
 
+test("scrolling over the full-height map moves the page", async ({
+  browser,
+}) => {
+  for (const width of [1280, 700]) {
+    const context = await browser.newContext({
+      viewport: { width, height: 720 },
+    });
+    try {
+      const page = await context.newPage();
+      await page.goto("http://127.0.0.1:5174/tools/map-editor.html");
+      await expect(page.getByRole("status")).toContainText(
+        "loaded from repository",
+      );
+
+      for (const zoom of [1, 3]) {
+        if (zoom === 3) {
+          await page.getByRole("slider", { name: "Zoom" }).press("End");
+        }
+        await page.evaluate(() => window.scrollTo(0, 0));
+        const canvas = page.locator(".canvas-scroll");
+        const bounds = await canvas.boundingBox();
+        expect(bounds).not.toBeNull();
+        await page.mouse.move(bounds!.x + 20, bounds!.y + 20);
+        await page.mouse.wheel(0, 400);
+        await expect
+          .poll(() => page.evaluate(() => window.scrollY))
+          .toBeGreaterThan(0);
+        expect(await canvas.evaluate((element) => element.scrollTop)).toBe(0);
+      }
+    } finally {
+      await context.close();
+    }
+  }
+});
+
 test("local map editor adjusts geometry without writing source files", async ({
   page,
 }) => {

@@ -112,8 +112,7 @@ p {
   width: 90px;
 }
 .canvas-scroll {
-  height: min(78vh, 1000px);
-  overflow: auto;
+  overflow-x: auto;
   background: #dfe7d8;
   border: 1px solid #c4d1bf;
   text-align: center;
@@ -188,8 +187,5 @@ p {
   }
   .editor-layout {
     grid-template-columns: 1fr;
-  }
-  .canvas-scroll {
-    height: 60vh;
   }
 }
